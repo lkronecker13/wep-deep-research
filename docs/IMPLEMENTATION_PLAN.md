@@ -20,12 +20,12 @@ Prove deep research agent value with 4-phase workflow (Planning → Gathering �
 
 **What Gets Built**:
 - 4 Pydantic AI agents (all phases from start)
-  - Planning Agent (Claude Sonnet 4.5)
-  - Gathering Agent (Gemini 2.5 Flash, parallel execution)
-  - Synthesis Agent (Claude Sonnet 4.5)
-  - Verification Agent (Claude Sonnet 4.5)
+  - Planning Agent (Claude Sonnet 4.5, `output_type=ResearchPlan`)
+  - Gathering Agent (Gemini 2.5 Flash, `builtin_tools=[WebSearchTool()]`, parallel execution)
+  - Synthesis Agent (Claude Sonnet 4.5, `output_type=ResearchReport`)
+  - Verification Agent (Claude Sonnet 4.5, `output_type=ValidationResult`)
 - Core Pydantic models (ResearchPlan, SearchResult, ResearchReport, ValidationResult)
-- Web search tool (Tavily API integration)
+- Web search via PydanticAI's builtin `WebSearchTool()` (no custom tool code needed)
 - Simple CLI script: `python research/run_research.py "query"`
 - JSON output for results
 
@@ -41,60 +41,85 @@ Prove deep research agent value with 4-phase workflow (Planning → Gathering �
 
 ```
 research/
-├── run_research.py              # CLI entry point (~100 lines)
-├── agents.py                    # All 4 agents defined (~60 lines)
-├── models.py                    # 5 Pydantic models (~50 lines)
-├── tools.py                     # WebSearchTool (~30 lines)
+├── run_research.py              # CLI entry point + workflow (~120 lines)
+├── agents.py                    # All 4 agents defined (~80 lines)
+├── models.py                    # 5 Pydantic models (~60 lines)
 └── outputs/                     # JSON results directory
     └── research_YYYY-MM-DD_HH-MM-SS.json
 ```
 
-**Total LOC**: ~240 lines of production-quality Python
+**Total LOC**: ~260 lines of production-quality Python
+
+**Note**: No custom `tools.py` needed - PydanticAI provides `WebSearchTool()` as a builtin tool that integrates directly with model providers (Anthropic, Google, OpenAI).
 
 ### Dependencies to Add
 
 ```toml
 # Add to pyproject.toml [project.dependencies]
-"pydantic-ai>=0.0.15",
-"httpx>=0.27.0",
-"tavily-python>=0.5.0",
+"pydantic-ai[anthropic,google]>=0.2.0",  # PydanticAI with provider support
 ```
+
+**Note**: `WebSearchTool()` is a builtin that uses the model provider's native web search capability - no separate Tavily dependency needed for Phase 1. If you prefer Tavily, use `pydantic-ai-slim[tavily]` and the `tavily_search_tool()` common tool instead.
 
 ### Implementation Tasks
 
 1. **Install dependencies** (15 min)
    ```bash
-   cd /Users/lkronecker/Projects/wepoint/wep-deep-research
-   # Edit pyproject.toml to add pydantic-ai, httpx, tavily-python
+   # Edit pyproject.toml to add pydantic-ai[anthropic,google]
    uv sync
    ```
 
 2. **Create `research/models.py`** (1 hour)
-   - `SearchStep` - Individual search task
-   - `ResearchPlan` - Output from planning agent
+   - `SearchStep` - Individual search task (with `search_terms: str`)
+   - `ResearchPlan` - Output from planning agent (with `web_search_steps: list[SearchStep]`)
    - `SearchResult` - Output from gathering agent
    - `ResearchReport` - Output from synthesis agent
    - `ValidationResult` - Output from verification agent
 
-3. **Create `research/tools.py`** (1 hour)
-   - `async def web_search(query: str, max_results: int = 5) -> str`
-   - Tavily API integration with httpx
-   - Error handling for API failures
+3. **Create `research/agents.py`** (2 hours)
+   Following the PydanticAI pattern from [pydantic-stack-demo](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec):
+   ```python
+   from pydantic_ai import Agent
+   from pydantic_ai.builtin_tools import WebSearchTool
 
-4. **Create `research/agents.py`** (2 hours)
-   - `plan_agent` - Claude Sonnet 4.5, result_type=ResearchPlan
-   - `gathering_agent` - Gemini 2.5 Flash, tools=[web_search], result_type=SearchResult
-   - `synthesis_agent` - Claude Sonnet 4.5, result_type=ResearchReport
-   - `verification_agent` - Claude Sonnet 4.5, result_type=ValidationResult
+   plan_agent = Agent(
+       'anthropic:claude-sonnet-4-5',
+       instructions="Create a research plan...",
+       output_type=ResearchPlan,
+       name='plan_agent',
+   )
 
-5. **Create `research/run_research.py`** (1.5 hours)
+   gathering_agent = Agent(
+       'google-gla:gemini-2.5-flash',
+       instructions="Search for information...",
+       builtin_tools=[WebSearchTool()],  # No custom tool needed!
+       output_type=SearchResult,
+       name='gathering_agent',
+   )
+
+   synthesis_agent = Agent(
+       'anthropic:claude-sonnet-4-5',
+       instructions="Synthesize research findings...",
+       output_type=ResearchReport,
+       name='synthesis_agent',
+   )
+
+   verification_agent = Agent(
+       'anthropic:claude-sonnet-4-5',
+       instructions="Verify and validate...",
+       output_type=ValidationResult,
+       name='verification_agent',
+   )
+   ```
+
+4. **Create `research/run_research.py`** (1.5 hours)
    - CLI argument parsing
    - 4-phase workflow orchestration
    - Parallel execution of searches using `asyncio.TaskGroup`
    - JSON output to `outputs/` directory
    - Progress printing to console
 
-6. **Manual testing and iteration** (1-2 hours)
+5. **Manual testing and iteration** (1-2 hours)
    - Test with example queries
    - Refine agent prompts based on output quality
    - Validate parallel execution works
@@ -135,16 +160,43 @@ Evolve research scripts into locally running service with FastAPI, DBOS durabili
 **What Moves from Phase 1 (unchanged)**:
 - All 4 agent definitions → `src/agents/*.py` (split into 4 files, same code)
 - All 5 Pydantic models → `src/models/*.py` (split into 3 files, same code)
-- Web search tool → `src/tools/web_search.py` (same code)
-- 4-phase workflow logic (same sequence, just wrapped with DBOS)
+- 4-phase workflow logic (same sequence, wrapped with DBOS)
 
 **What Gets Added**:
+- `DBOSAgent` wrappers around PydanticAI agents (from `pydantic_ai.ext.dbos`)
 - FastAPI service with `/research` endpoints
 - Local PostgreSQL database (Docker Compose)
-- DBOS-wrapped workflow for durability
+- DBOS-wrapped workflow for durability using `@DBOS.workflow()`
+- `DBOS.start_workflow_async()` for durable parallel execution
 - Domain events emitted at each phase
 - Repository layer for persistence
 - Comprehensive test suite (80%+ coverage)
+
+**Key Pattern - DBOSAgent Wrapper** (from [pydantic-stack-demo](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec)):
+```python
+from pydantic_ai.ext.dbos import DBOSAgent
+from dbos import DBOS
+
+# Wrap PydanticAI agents with DBOSAgent for durability
+plan_agent = Agent(...)  # PydanticAI agent (unchanged from Phase 1)
+dbos_plan_agent = DBOSAgent(plan_agent)  # DBOS wrapper
+
+@DBOS.workflow()
+async def deep_research(query: str):
+    # Use wrapped agents - they checkpoint automatically
+    plan = await dbos_plan_agent.run(query)
+
+    # Durable parallel execution (not asyncio.TaskGroup)
+    search_handles = [
+        await DBOS.start_workflow_async(search_workflow, step.search_terms)
+        for step in plan.data.web_search_steps
+    ]
+    results = [await handle.get_result() for handle in search_handles]
+
+    report = await dbos_synthesis_agent.run(results)
+    validation = await dbos_verification_agent.run(report)
+    return validation
+```
 
 ### File Structure
 
@@ -153,9 +205,10 @@ src/
 ├── agents/
 │   ├── __init__.py
 │   ├── planning_agent.py        # Copied from research/agents.py
-│   ├── gathering_agent.py       # Copied from research/agents.py
+│   ├── gathering_agent.py       # Copied from research/agents.py (with WebSearchTool builtin)
 │   ├── synthesis_agent.py       # Copied from research/agents.py
-│   └── verification_agent.py    # Copied from research/agents.py
+│   ├── verification_agent.py    # Copied from research/agents.py
+│   └── dbos_agents.py           # DBOSAgent wrappers for all 4 agents
 │
 ├── models/
 │   ├── __init__.py
@@ -163,14 +216,11 @@ src/
 │   ├── search_result.py         # SearchResult
 │   └── research_report.py       # ResearchReport, ValidationResult
 │
-├── tools/
-│   ├── __init__.py
-│   └── web_search.py            # Copied from research/tools.py
-│
 ├── workflows/
 │   ├── __init__.py
 │   ├── deep_research.py         # Base workflow (same logic as run_research.py)
-│   └── deep_research_dbos.py    # DBOS-wrapped version with @DBOS.workflow()
+│   ├── deep_research_dbos.py    # DBOS-wrapped version with @DBOS.workflow()
+│   └── search_workflow.py       # Individual search workflow for parallel execution
 │
 ├── events/
 │   ├── __init__.py
@@ -208,6 +258,7 @@ research/                        # Keep Phase 1 POC for reference
 
 ```toml
 # Add to pyproject.toml [project.dependencies]
+"pydantic-ai[anthropic,google,dbos]>=0.2.0",  # Adds DBOSAgent support
 "fastapi>=0.115.0",
 "uvicorn>=0.32.0",
 "sqlalchemy>=2.0.0",
@@ -224,7 +275,7 @@ research/                        # Keep Phase 1 POC for reference
    - Create src/ folder structure
    - Copy and split `research/agents.py` → 4 files in `src/agents/`
    - Copy and split `research/models.py` → 3 files in `src/models/`
-   - Copy `research/tools.py` → `src/tools/web_search.py`
+   - Create `src/agents/dbos_agents.py` with DBOSAgent wrappers
    - Update imports (only change: import paths)
 
 2. **Add domain events** (Day 1, 2 hours)
@@ -249,8 +300,11 @@ research/                        # Keep Phase 1 POC for reference
 
 5. **Add DBOS workflow wrapper** (Day 3-4, 6 hours)
    - Create `src/workflows/deep_research.py` (base workflow)
-   - Create `src/workflows/deep_research_dbos.py` (DBOS-wrapped)
-   - Decorate with `@DBOS.workflow()`
+   - Create `src/workflows/search_workflow.py` (individual search for parallel execution)
+   - Create `src/workflows/deep_research_dbos.py` (DBOS-wrapped):
+     - Use `DBOSAgent` wrappers from `pydantic_ai.ext.dbos`
+     - Decorate with `@DBOS.workflow()`
+     - Use `DBOS.start_workflow_async()` for durable parallel searches
    - Test workflow resumption after simulated failure
 
 6. **Add repository layer** (Day 4, 4 hours)
@@ -500,28 +554,45 @@ git push origin main
 ### Components Unchanged Across All Phases
 
 **Agent Definitions** (Phase 1 → Phase 2 → Phase 3):
-- Planning Agent: model, system_prompt, result_type
-- Gathering Agent: model, tools, result_type
-- Synthesis Agent: model, system_prompt, result_type
-- Verification Agent: model, system_prompt, result_type
+- Planning Agent: model, instructions, output_type
+- Gathering Agent: model, builtin_tools=[WebSearchTool()], output_type
+- Synthesis Agent: model, instructions, output_type
+- Verification Agent: model, instructions, output_type
 
 **Pydantic Models** (Phase 1 → Phase 2 → Phase 3):
 - ResearchPlan, SearchStep, SearchResult, ResearchReport, ValidationResult
 
 **Tools** (Phase 1 → Phase 2 → Phase 3):
-- web_search function signature and implementation
+- `WebSearchTool()` builtin - no custom code to maintain!
 
-**Core Workflow Logic** (identical sequence):
+**Core Workflow Logic**:
+
+Phase 1 (asyncio):
 ```python
 plan = await plan_agent.run(query)
 async with asyncio.TaskGroup() as tg:
-    tasks = [tg.create_task(gathering_agent.run(step.query)) for step in plan.search_steps]
+    tasks = [tg.create_task(gathering_agent.run(step.search_terms)) for step in plan.data.web_search_steps]
 results = [task.result().data for task in tasks]
 report = await synthesis_agent.run(synthesis_prompt)
 validation = await verification_agent.run(validation_prompt)
 ```
 
-**Reuse Percentage**: ~60% of Phase 1 code moves to production unchanged. Remaining 40% is infrastructure additions, not logic rewrites.
+Phase 2+ (DBOS - same logic, durable execution):
+```python
+@DBOS.workflow()
+async def deep_research(query: str):
+    plan = await dbos_plan_agent.run(query)
+    search_handles = [
+        await DBOS.start_workflow_async(search_workflow, step.search_terms)
+        for step in plan.data.web_search_steps
+    ]
+    results = [await handle.get_result() for handle in search_handles]
+    report = await dbos_synthesis_agent.run(results)
+    validation = await dbos_verification_agent.run(report)
+    return validation
+```
+
+**Reuse Percentage**: ~70% of Phase 1 agent code moves to production unchanged. Phase 2 adds DBOSAgent wrappers (thin layer), not logic rewrites.
 
 ---
 
@@ -605,12 +676,18 @@ gh pr create --title "feat: Add research API endpoints" --body "..."
 
 The following files are essential for implementation:
 
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/docs/AGENT_ARCHITECTURE.md` - Agent patterns and 4-phase workflow design
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/docs/IMPLEMENTATION_GUIDE.md` - Code examples for agents, tools, DBOS, testing
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/docs/ARCHITECTURE_DECISIONS.md` - Technology stack rationale and trade-offs
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/src/logging.py` - Production logging (reuse in Phase 2/3)
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/pyproject.toml` - Dependencies configuration
-- `/Users/lkronecker/Projects/wepoint/wep-deep-research/justfile` - Build automation (validate-branch command)
+**External References**:
+- [pydantic-stack-demo/durable-exec](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec) - **Reference implementation** for PydanticAI + DBOS patterns
+- [PydanticAI Built-in Tools](https://ai.pydantic.dev/builtin-tools/) - WebSearchTool documentation
+- [PydanticAI DBOS Extension](https://ai.pydantic.dev/api/ext/dbos/) - DBOSAgent wrapper documentation
+
+**Local Files**:
+- `docs/AGENT_ARCHITECTURE.md` - Agent patterns and 4-phase workflow design
+- `docs/IMPLEMENTATION_GUIDE.md` - Code examples for agents, tools, DBOS, testing
+- `docs/ARCHITECTURE_DECISIONS.md` - Technology stack rationale and trade-offs
+- `src/logging.py` - Production logging (reuse in Phase 2/3)
+- `pyproject.toml` - Dependencies configuration
+- `justfile` - Build automation (validate-branch command)
 
 ---
 
