@@ -2,7 +2,7 @@
 
 > AI-powered deep research using multi-agent workflows
 
-An intelligent research system that conducts structured, comprehensive research using specialized AI agents. Built with [PydanticAI](https://ai.pydantic.dev/) and inspired by [Pydantic's durable-exec demo](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec).
+An intelligent research system that conducts structured, comprehensive research using specialized AI agents. Built with [PydanticAI](https://ai.pydantic.dev/) for [Wepoint](https://www.wepoint.com/) as an internal research tool.
 
 **Current Status:** Phase 1 POC ✅ (Functional prototype)
 
