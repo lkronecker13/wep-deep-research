@@ -196,10 +196,7 @@ wep-deep-research/
 ├── tests/                       # Test suite
 │   └── test_logging.py          # Example tests
 │
-├── docs/                        # Technical documentation
-│   ├── ARCHITECTURE_DECISIONS.md
-│   ├── IMPLEMENTATION_PLAN.md
-│   └── PHASE1_IMPLEMENTATION.md
+├── docs/                        # Technical documentation (local only)
 │
 ├── pyproject.toml               # Dependencies and config
 ├── justfile                     # Development automation
@@ -349,12 +346,6 @@ export GEMINI_API_KEY="..."            # Get from https://aistudio.google.com/ap
 ---
 
 ## Learn More
-
-### Documentation
-
-- [Architecture Decisions](docs/ARCHITECTURE_DECISIONS.md) - Detailed technical rationale and trade-offs
-- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Three-phase development roadmap
-- [Phase 1 Implementation](docs/PHASE1_IMPLEMENTATION.md) - POC implementation details
 
 ### External Resources
 
