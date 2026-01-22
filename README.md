@@ -1,188 +1,392 @@
-# Autonomous Python Template
+# Deep Research Service
 
-> Describe what you want to build. Let agents build it.
+> AI-powered deep research using multi-agent workflows
 
-A self-building Python ML/Data Science template powered by Claude Code. Clone, describe your project, and watch it come to life.
+An intelligent research system that conducts structured, comprehensive research using specialized AI agents. Built with [PydanticAI](https://ai.pydantic.dev/) for [Wepoint](https://www.wepoint.com/) as an internal research tool.
+
+**Current Status:** Phase 1 POC ✅ (Functional prototype)
+
+## What It Does
+
+Conducts deep research by orchestrating four specialized AI agents through a structured workflow:
+
+```
+┌─────────────┐      ┌──────────────┐      ┌───────────┐      ┌──────────────┐
+│  Planning   │ ───> │  Gathering   │ ───> │ Synthesis │ ───> │ Verification │
+│   Agent     │      │  (Parallel)  │      │   Agent   │      │    Agent     │
+│             │      │              │      │           │      │              │
+│   Claude    │      │    Gemini    │      │  Claude   │      │   Claude     │
+└─────────────┘      └──────────────┘      └───────────┘      └──────────────┘
+      │                     │                     │                    │
+      v                     v                     v                    v
+  Research Plan       Web Searches        Research Report      Quality Check
+  (1-5 steps)         (Parallel)          (Synthesized)        (Validated)
+```
+
+**Example:** Ask "What are the latest developments in quantum computing?" and receive a comprehensive research report with citations, key findings, and quality validation—all in under 2 minutes.
+
+---
 
 ## Quick Start
 
-### 1. Clone this template
-
-```bash
-git clone https://github.com/ai-enhanced-engineer/aut-python-template.git my-project
-cd my-project
-```
-
-### 2. Set up environment
-
-```bash
-just init
-```
-
-### 3. Start Claude Code
-
-```bash
-claude
-```
-
-### 4. Describe your project
-
-```
-> I want to build a RAG system for legal documents
-```
-
-That's it. Describe what you want; agents help you build it.
-
-## Example Session
-
-```
-You: I want to build a fraud detection API
-
-Claude: I'll help you build a fraud detection API. Let me understand your requirements:
-        - What data sources will you use? (transactions, user behavior, etc.)
-        - Any specific ML approach preference? (rule-based, XGBoost, neural network)
-        - What's your target latency for predictions?
-
-You: Transaction data from a PostgreSQL database. XGBoost for now, we can upgrade later.
-     Need sub-100ms latency.
-
-Claude: Great, let me set up the project structure:
-        1. Creating data pipeline for PostgreSQL ingestion
-        2. Setting up XGBoost model with feature engineering
-        3. Building FastAPI endpoint with async handlers
-        4. Adding monitoring and logging
-
-        [Creates files, writes tests, validates...]
-
-You: Add a batch prediction endpoint too
-
-Claude: Adding batch prediction endpoint with:
-        - CSV upload support
-        - Background processing with status tracking
-        - Results stored in PostgreSQL
-
-        [Implements, tests, validates...]
-```
-
-## What's Included
-
-This template comes with production-ready infrastructure:
-
-### Production Logging
-
-- Structured JSON logging with [structlog](https://www.structlog.org/)
-- Correlation ID tracking across requests
-- Dual-mode: human-readable (dev) / JSON (prod)
-
-### Testing Infrastructure
-
-- pytest with markers (unit, functional, integration)
-- 80% coverage requirement
-- Pre-commit hooks for quality gates
-
-### CI/CD Pipeline
-
-- GitHub Actions workflows
-- Semantic versioning with auto-release
-- Format → Lint → Type-check → Test pipeline
-
-### Modern Python Tooling
+### Prerequisites
 
 - Python 3.12+
-- Type hints throughout
-- Pydantic for data validation
-- uv for fast dependency management
-- Ruff + Black for formatting/linting
-- mypy (strict mode) for type checking
+- [uv](https://docs.astral.sh/uv/) package manager
+- API keys:
+  - [Anthropic API key](https://console.anthropic.com/) (Claude)
+  - [Google AI API key](https://aistudio.google.com/apikey) (Gemini)
 
-## Project Structure
-
-```
-my-project/
-├── src/                       # Python source code
-│   ├── __init__.py
-│   └── logging.py             # Production logging system
-├── tests/                     # Test suite
-│   └── test_logging.py        # 21+ logging tests as examples
-├── .claude/                   # Claude Code settings
-├── .github/workflows/         # CI/CD pipelines
-│   └── ci.yml
-├── CLAUDE.md                  # Development standards
-├── pyproject.toml             # Project configuration
-├── justfile                   # Automation commands
-├── ADR.md                     # Architecture decisions
-└── .pre-commit-config.yaml    # Git hooks
-```
-
-## Development Commands
+### Installation
 
 ```bash
-just                   # Show all available commands
+# Clone the repository
+git clone <your-repo-url>
+cd wep-deep-research
 
-# Environment
-just init              # Complete development setup
-just sync              # Update dependencies
-just clean-env         # Reset environment
+# Set up environment
+just init
 
-# Code Quality
-just format            # Auto-format code
-just lint              # Fix linting issues
-just type-check        # Validate type hints
-just validate-branch   # Run all checks (required before commits)
-
-# Testing
-just test              # Standard test suite
-just test-unit         # Fast unit tests
-just test-functional   # Feature tests
-just test-integration  # Integration tests
-just test-all          # Complete test suite
+# Configure API keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="..."
 ```
 
-## The Production-First Philosophy
+### Run Your First Research Query
 
-This template embodies the principle that **production AI requires engineering discipline**:
+```bash
+python -m research.run_research "What are the latest developments in quantum computing?"
+```
 
-- **90% infrastructure, 10% model code**: Most production AI is validation, monitoring, error handling, and cost controls—not algorithms
-- **Reliability over novelty**: Production systems must work consistently, not just impressively
-- **Plan for failure**: Every external call needs error handling; every assumption needs validation
+**Output:** Results are saved to `research/outputs/research_YYYY-MM-DD_HH-MM-SS.json`
 
-## Who Should Use This
+### View Results
 
-### Teams Starting ML/Data Projects
+```bash
+# Pretty-print the latest result
+cat research/outputs/research_*.json | jq '.report.key_findings'
+```
 
-Stop reinventing infrastructure. Describe your project and get a production-ready foundation.
+---
 
-### Senior Engineers New to ML
+## How It Works
 
-Get the safety rails you're accustomed to in production systems while learning ML concepts.
+### 4-Phase Workflow
 
-### Technical Leaders
+#### 1. Planning Agent (Claude Sonnet 4.5)
+**Input:** Research query
+**Output:** Structured research plan with 1-5 targeted search steps
 
-Give your team a consistent, production-ready starting point that embodies engineering best practices.
+Creates a strategic research plan by:
+- Breaking down the query into logical search components
+- Identifying different angles to explore
+- Prioritizing depth over breadth
+- Providing clear purpose for each search step
+
+#### 2. Gathering Agent (Gemini 2.5 Flash)
+**Input:** Search steps from planning phase
+**Output:** Search results with citations and key findings
+
+Executes web searches in parallel using PydanticAI's built-in `WebSearchTool`:
+- Searches 1-5 queries simultaneously (5x faster than sequential)
+- Extracts facts, statistics, and insights
+- Collects source URLs for citation
+- Cost-optimized: Gemini Flash is 10x cheaper than Claude
+
+#### 3. Synthesis Agent (Claude Sonnet 4.5)
+**Input:** All search results + original query
+**Output:** Coherent research report
+
+Combines findings into a structured report:
+- Identifies patterns and themes across sources
+- Presents clear key findings
+- Maintains complete source attribution
+- Acknowledges limitations and gaps
+
+#### 4. Verification Agent (Claude Sonnet 4.5)
+**Input:** Synthesized research report
+**Output:** Quality validation with confidence score
+
+Validates research integrity:
+- Checks internal consistency (no contradictions)
+- Assesses source quality and diversity
+- Verifies all claims are backed by sources
+- Provides confidence score (0.0-1.0)
+- Recommends improvements if needed
+
+### Multi-Model Strategy
+
+We use different LLM models optimized for different tasks:
+
+| Phase | Model | Why? |
+|-------|-------|------|
+| Planning | Claude Sonnet 4.5 | Complex reasoning, strategic thinking |
+| Gathering | Gemini 2.5 Flash | Fast parallel execution, 10x cheaper |
+| Synthesis | Claude Sonnet 4.5 | Deep analysis, coherent writing |
+| Verification | Claude Sonnet 4.5 | Critical evaluation, fact-checking |
+
+**Cost optimization:** A typical research workflow costs ~$0.30-$0.50 by using Gemini for parallel searches while reserving Claude for reasoning-heavy tasks.
+
+### Example Output Structure
+
+```json
+{
+  "query": "What are the latest developments in quantum computing?",
+  "plan": {
+    "executive_summary": "Research quantum computing breakthroughs...",
+    "web_search_steps": [
+      {
+        "search_terms": "quantum computing breakthroughs 2025",
+        "purpose": "Identify recent major advances"
+      }
+    ]
+  },
+  "search_results": [
+    {
+      "query": "quantum computing breakthroughs 2025",
+      "findings": ["IBM announces 1000+ qubit processor...", "..."],
+      "sources": ["https://...", "..."]
+    }
+  ],
+  "report": {
+    "title": "Latest Developments in Quantum Computing",
+    "summary": "Quantum computing has seen significant advances...",
+    "key_findings": [
+      "IBM released a 1000+ qubit quantum processor",
+      "Google achieved quantum error correction milestone"
+    ],
+    "sources": ["https://...", "..."],
+    "limitations": "Most advances are still in research phase..."
+  },
+  "validation": {
+    "is_valid": true,
+    "confidence_score": 0.85,
+    "issues_found": [],
+    "recommendations": ["Consider adding more diverse sources"]
+  }
+}
+```
+
+---
+
+## Architecture
+
+### Technology Stack
+
+- **Framework:** [PydanticAI](https://ai.pydantic.dev/) - Type-safe AI agent framework
+- **Models:** Anthropic Claude Sonnet 4.5 + Google Gemini 2.5 Flash
+- **Web Search:** PydanticAI built-in `WebSearchTool` (uses model provider's native search)
+- **Validation:** Pydantic v2 for type-safe data models
+- **Execution:** Async/await with parallel task execution (`asyncio.TaskGroup`)
+
+### Project Structure
+
+```
+wep-deep-research/
+├── research/                    # Phase 1 POC (current)
+│   ├── models.py                # Pydantic models (5 models)
+│   ├── agents.py                # PydanticAI agents (4 agents)
+│   ├── run_research.py          # CLI + workflow orchestration
+│   └── outputs/                 # JSON results (gitignored)
+│
+├── src/                         # Core application (future phases)
+│   ├── logging.py               # Production logging system
+│   └── ...
+│
+├── tests/                       # Test suite
+│   └── test_logging.py          # Example tests
+│
+├── docs/                        # Technical documentation (local only)
+│
+├── pyproject.toml               # Dependencies and config
+├── justfile                     # Development automation
+└── README.md                    # This file
+```
+
+### Key Design Decisions
+
+1. **Multi-agent workflow:** Separates concerns (planning, gathering, synthesis, verification) for better quality and maintainability
+
+2. **Parallel execution:** Independent searches run concurrently using `asyncio.TaskGroup`, reducing total time by 5-10x
+
+3. **Type safety:** All data validated with Pydantic models—catches errors at runtime before they propagate
+
+4. **Lazy initialization:** Agents created on-demand to avoid requiring API keys for code quality tools
+
+5. **Cost optimization:** Strategic model selection balances quality and cost (Gemini for volume, Claude for reasoning)
+
+---
+
+## Development
+
+### Environment Setup
+
+```bash
+# Set up Python 3.12+ environment
+just init
+
+# Sync dependencies
+just sync
+```
+
+### Code Quality
+
+```bash
+# Format code
+just format
+
+# Lint and auto-fix issues
+just lint
+
+# Type check with mypy
+just type-check
+
+# Run tests (80% coverage required)
+just test
+
+# Run all quality checks
+just validate-branch
+```
+
+### Development Workflow
+
+The project follows production-first development practices:
+
+- **Type safety:** Strict mypy type checking on all code
+- **Test coverage:** 80% minimum coverage enforced
+- **Code quality:** Automated formatting (ruff) and linting
+- **Git workflow:** Feature branches with PR reviews (no direct commits to main)
+
+### Testing
+
+```bash
+# Run standard test suite (excludes integration tests)
+just test
+
+# Run only unit tests
+just test-unit
+
+# Run all tests including integration
+just test-all
+```
+
+**Test naming convention:** All tests follow `test__<what>__<expected>` pattern
+
+Example: `test__plan_agent__creates_valid_research_plan`
+
+---
+
+## Roadmap
+
+### ✅ Phase 1: POC (Complete)
+
+**Status:** Working prototype
+**Location:** `research/` folder
+**Features:**
+- 4 specialized AI agents (planning, gathering, synthesis, verification)
+- Async parallel execution for searches
+- Type-safe Pydantic models
+- CLI interface with JSON output
+- Multi-model cost optimization
+
+**Typical performance:** Research query completes in < 2 minutes, costs $0.30-$0.50
+
+### 🚧 Phase 2: Local Service (Planned - 1-2 weeks)
+
+**Goal:** FastAPI REST service with durable execution
+
+**Key additions:**
+- FastAPI endpoints for research workflows
+- DBOS-backed durability (PostgreSQL)
+- Workflow resumption on failure
+- Repository pattern for persistence
+- Domain events for state tracking
+- Comprehensive test suite (80%+ coverage)
+
+### 📋 Phase 3: Production Deployment (Future - 2-3 weeks)
+
+**Goal:** Production-ready service on GCP
+
+**Key additions:**
+- Cloud Run deployment
+- Logfire observability and cost tracking
+- API authentication and rate limiting
+- Monitoring dashboards and alerts
+- Load testing and performance optimization
+- Production runbook
+
+---
+
+## Technical Details
+
+### Dependencies
+
+Core dependencies:
+- `pydantic-ai[anthropic,google]>=0.2.0` - AI agent framework with model providers
+- `pydantic>=2.11.0` - Data validation
+- `annotated-types>=0.7.0` - Type constraints (MaxLen)
+- `anthropic>=0.76.0` - Claude API client
+- `google-genai>=1.59.0` - Gemini API client
+
+Development dependencies:
+- `pytest>=9.0.0` - Testing framework
+- `mypy>=1.19.0` - Type checking
+- `ruff>=0.14.0` - Linting and formatting
+
+See `pyproject.toml` for complete dependency list.
+
+### Environment Variables
+
+Required API keys:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."  # Get from https://console.anthropic.com/
+export GEMINI_API_KEY="..."            # Get from https://aistudio.google.com/apikey
+```
+
+---
 
 ## Learn More
 
-### Production AI Engineering
+### External Resources
 
-- [A Production-First Approach to AI Engineering](https://aienhancedengineer.substack.com/p/a-production-first-approach-to-ai)
-- [Google's Rules for ML](https://developers.google.com/machine-learning/guides/rules-of-ml)
-- [Hidden Technical Debt in ML Systems](https://papers.nips.cc/paper/5656-hidden-technical-debt-in-machine-learning-systems.pdf)
+- [PydanticAI Documentation](https://ai.pydantic.dev/) - Agent framework
+- [Pydantic Stack Demo](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec) - Reference implementation
+- [Claude API Documentation](https://docs.anthropic.com/) - Anthropic API
+- [Gemini API Documentation](https://ai.google.dev/) - Google AI
 
-### Technologies
+### Key Concepts
 
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [Pydantic](https://docs.pydantic.dev/) - Data validation
-- [structlog](https://www.structlog.org/) - Structured logging
-- [uv](https://docs.astral.sh/uv/) - Fast Python package management
+**Multi-agent workflows:** Breaking complex tasks into specialized agent roles improves quality and maintainability
+
+**Durable execution:** Long-running workflows that can resume on failure (Phase 2 feature with DBOS)
+
+**Type-safe AI:** Using Pydantic for structured LLM outputs catches errors early and improves reliability
+
+**Cost optimization:** Strategic model selection balances quality and cost for production viability
+
+---
 
 ## Contributing
 
-When contributing, prioritize:
+When contributing, follow these principles:
 
-1. **Reliability over features**
-2. **Simplicity over cleverness**
-3. **Documentation over assumptions**
-4. **Tests over trust**
+1. **Reliability over features** - Production systems must work consistently
+2. **Simplicity over cleverness** - Code should be easy to understand and maintain
+3. **Type safety** - All functions have type hints, validated with mypy strict mode
+4. **Test coverage** - 80% minimum coverage required
+5. **Code quality** - Run `just validate-branch` before all commits
+
+### Development Standards
+
+- Python 3.12+
+- Type hints on all functions
+- Pydantic for data validation
+- structlog for logging
+- Test naming: `test__<what>__<expected>`
+
+See [CLAUDE.md](CLAUDE.md) for complete development standards.
+
+---
 
 ## License
 
@@ -190,4 +394,10 @@ Apache License 2.0 - See [LICENSE](LICENSE) file.
 
 ---
 
-*"Describe what you want. Let agents build it."*
+## Status
+
+**Current Phase:** 1 (POC) ✅
+**Next Phase:** 2 (Local Service) 🚧
+**Production Ready:** Phase 3 📋
+
+*Last updated: 2026-01-20*

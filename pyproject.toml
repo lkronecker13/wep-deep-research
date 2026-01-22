@@ -1,19 +1,20 @@
 [project]
-# TODO: Change to your project name
-name = "aut-python-template"
-version = "0.6.0"
-# TODO: Update project description
-description = "Autonomous Python ML/Data Science template - Describe your project, let agents build it"
-# TODO: Update author information
+name = "wep-deep-research"
+version = "0.1.0"
+description = "AI-powered deep research service using multi-agent workflows with PydanticAI"
 authors = [{name="Leopoldo Garcia Vargas", email="lk13.dev@gmail.com"}]
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
 dependencies = [
     # Core utilities
-    "python-dotenv>=1.0.0",
     "pydantic>=2.11.5",
-    "pydantic-settings>=2.9.1",
+    "annotated-types>=0.7.0",
     "structlog>=25.4.0",
+    "python-dotenv>=1.0.0",
+    # AI frameworks
+    "pydantic-ai>=0.2.0",
+    "anthropic>=0.76.0",
+    "google-genai>=1.59.0",
 ]
 
 [project.optional-dependencies]
@@ -23,14 +24,9 @@ dev = [
     "pytest-asyncio>=0.22.0",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
-    "requests>=2.32.0",
-    "requests-mock>=1.11.0",
     # Code quality
     "mypy>=1.6.0",
-    "flake8>=6.0.0",
-    "black>=24.3.0",
     "ruff>=0.7.1",
-    "types-requests>=2.0.0",
     # Pre-commit
     "pre-commit>=4.2.0",
     # Release tooling

@@ -136,6 +136,19 @@ validate-branch: format lint type-check test
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
 
 # ----------------------------
+# Research POC (Phase 1)
+# ----------------------------
+
+# Run a research query using the Phase 1 POC
+research query:
+    @echo "🔍 Running deep research query..."
+    @echo "Query: {{ query }}"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    uv run python -m research.run_research "{{ query }}"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    @echo "✅ Research complete! Check research/outputs/ for results"
+
+# ----------------------------
 # Run Application
 # ----------------------------
 
