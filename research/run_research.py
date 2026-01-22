@@ -46,14 +46,21 @@ async def run_research(query: str) -> dict[str, object]:
     print("Phase 1: Creating research plan...")
     plan_result = await plan_agent.run(query)
     plan = plan_result.output
-    print(f"  Created {len(plan.web_search_steps)} search steps\n")
+    print(f"  Created {len(plan.web_search_steps)} search steps")
+    print(f"  Plan: {plan.executive_summary[:200]}..." if len(plan.executive_summary) > 200 else f"  Plan: {plan.executive_summary}")
+    print()
 
     # Phase 2: Gathering (parallel execution)
     print("Phase 2: Gathering information...")
     async with asyncio.TaskGroup() as tg:
         tasks = [tg.create_task(gathering_agent.run(step.search_terms)) for step in plan.web_search_steps]
     results = [task.result().output for task in tasks]
-    print(f"  Completed {len(results)} searches\n")
+    print(f"  Completed {len(results)} searches")
+    for i, result in enumerate(results, 1):
+        preview = " ".join(result.findings[:2]) if result.findings else "No findings"
+        preview = preview[:200] + "..." if len(preview) > 200 else preview
+        print(f"    {i}. {preview}")
+    print()
 
     # Phase 3: Synthesis
     print("Phase 3: Synthesizing report...")
@@ -66,7 +73,10 @@ async def run_research(query: str) -> dict[str, object]:
     """
     report_result = await synthesis_agent.run(synthesis_prompt)
     report = report_result.output
-    print(f"  Report: {report.title}\n")
+    print(f"  Report: {report.title}")
+    summary_preview = report.summary[:200] + "..." if len(report.summary) > 200 else report.summary
+    print(f"  Summary: {summary_preview}")
+    print()
 
     # Phase 4: Verification
     print("Phase 4: Verifying report...")
@@ -78,7 +88,13 @@ async def run_research(query: str) -> dict[str, object]:
     """
     validation_result = await verification_agent.run(validation_prompt)
     validation = validation_result.output
-    print(f"  Valid: {validation.is_valid}, Confidence: {validation.confidence_score:.2f}\n")
+    print(f"  Valid: {validation.is_valid}, Confidence: {validation.confidence_score:.2f}")
+    if validation.issues_found:
+        print(f"  Issues: {len(validation.issues_found)} found")
+    if validation.recommendations:
+        first_rec = validation.recommendations[0][:200] + "..." if len(validation.recommendations[0]) > 200 else validation.recommendations[0]
+        print(f"  Recommendation: {first_rec}")
+    print()
 
     return {
         "query": query,
