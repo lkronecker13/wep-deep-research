@@ -6,12 +6,17 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from research.agents import (
     get_gathering_agent,
     get_plan_agent,
     get_synthesis_agent,
     get_verification_agent,
 )
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 async def run_research(query: str) -> dict[str, object]:
@@ -93,13 +98,96 @@ def main() -> None:
     query = sys.argv[1]
     result = asyncio.run(run_research(query))
 
-    # Save output
+    # Save outputs
     outputs_dir = Path(__file__).parent / "outputs"
     outputs_dir.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_file = outputs_dir / f"research_{timestamp}.json"
-    output_file.write_text(json.dumps(result, indent=2))
-    print(f"Results saved to: {output_file}")
+
+    # 1. Save full research results (all phases)
+    full_output_file = outputs_dir / f"research_{timestamp}.json"
+    full_output_file.write_text(json.dumps(result, indent=2))
+    print(f"\n✅ Full results saved to: {full_output_file}")
+
+    # 2. Save isolated report as JSON
+    report_json_file = outputs_dir / f"report_{timestamp}.json"
+    report_json_file.write_text(json.dumps(result["report"], indent=2))
+    print(f"✅ Report JSON saved to: {report_json_file}")
+
+    # 3. Save report as Markdown
+    report_md_file = outputs_dir / f"report_{timestamp}.md"
+    markdown_content = _format_report_as_markdown(result["report"], query, result["validation"])
+    report_md_file.write_text(markdown_content)
+    print(f"✅ Report Markdown saved to: {report_md_file}")
+
+
+def _format_report_as_markdown(report: dict, query: str, validation: dict) -> str:
+    """Format research report as Markdown."""
+    md_lines = [
+        f"# {report['title']}",
+        "",
+        f"**Research Query:** {query}",
+        "",
+        "---",
+        "",
+        "## Summary",
+        "",
+        report['summary'],
+        "",
+        "---",
+        "",
+        "## Key Findings",
+        "",
+    ]
+
+    for i, finding in enumerate(report['key_findings'], 1):
+        md_lines.append(f"{i}. {finding}")
+        md_lines.append("")
+
+    md_lines.extend([
+        "---",
+        "",
+        "## Sources",
+        "",
+    ])
+
+    for i, source in enumerate(report['sources'], 1):
+        md_lines.append(f"{i}. [{source}]({source})")
+
+    md_lines.extend([
+        "",
+        "---",
+        "",
+        "## Limitations",
+        "",
+        report['limitations'],
+        "",
+        "---",
+        "",
+        "## Quality Validation",
+        "",
+        f"- **Valid:** {validation['is_valid']}",
+        f"- **Confidence Score:** {validation['confidence_score']:.2f}",
+    ])
+
+    if validation.get('issues_found'):
+        md_lines.extend([
+            "",
+            "**Issues Found:**",
+            "",
+        ])
+        for issue in validation['issues_found']:
+            md_lines.append(f"- {issue}")
+
+    if validation.get('recommendations'):
+        md_lines.extend([
+            "",
+            "**Recommendations:**",
+            "",
+        ])
+        for rec in validation['recommendations']:
+            md_lines.append(f"- {rec}")
+
+    return "\n".join(md_lines)
 
 
 if __name__ == "__main__":
