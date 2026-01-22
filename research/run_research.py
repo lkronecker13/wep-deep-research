@@ -40,14 +40,14 @@ async def run_research(query: str) -> dict[str, object]:
     # Phase 1: Planning
     print("Phase 1: Creating research plan...")
     plan_result = await plan_agent.run(query)
-    plan = plan_result.data
+    plan = plan_result.output
     print(f"  Created {len(plan.web_search_steps)} search steps\n")
 
     # Phase 2: Gathering (parallel execution)
     print("Phase 2: Gathering information...")
     async with asyncio.TaskGroup() as tg:
         tasks = [tg.create_task(gathering_agent.run(step.search_terms)) for step in plan.web_search_steps]
-    results = [task.result().data for task in tasks]
+    results = [task.result().output for task in tasks]
     print(f"  Completed {len(results)} searches\n")
 
     # Phase 3: Synthesis
@@ -60,7 +60,7 @@ async def run_research(query: str) -> dict[str, object]:
     Create a comprehensive research report based on these materials.
     """
     report_result = await synthesis_agent.run(synthesis_prompt)
-    report = report_result.data
+    report = report_result.output
     print(f"  Report: {report.title}\n")
 
     # Phase 4: Verification
@@ -72,7 +72,7 @@ async def run_research(query: str) -> dict[str, object]:
     Check for quality, consistency, and reliability.
     """
     validation_result = await verification_agent.run(validation_prompt)
-    validation = validation_result.data
+    validation = validation_result.output
     print(f"  Valid: {validation.is_valid}, Confidence: {validation.confidence_score:.2f}\n")
 
     return {

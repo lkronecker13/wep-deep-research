@@ -27,7 +27,7 @@ def get_plan_agent() -> Agent[None, ResearchPlan]:
         - Include analysis instructions for synthesis phase
 
         Keep search steps focused and specific.""",
-        result_type=ResearchPlan,
+        output_type=ResearchPlan,
         name="plan_agent",
     )
 
@@ -48,8 +48,8 @@ def get_gathering_agent() -> Agent[None, SearchResult]:
         - Avoid speculation or unsupported claims
 
         Return structured findings with source URLs.""",
-        tools=[WebSearchTool()],
-        result_type=SearchResult,
+        builtin_tools=[WebSearchTool()],
+        output_type=SearchResult,
         name="gathering_agent",
     )
 
@@ -71,7 +71,7 @@ def get_synthesis_agent() -> Agent[None, ResearchReport]:
         - Be well-structured and readable
 
         Do not invent information. Stay grounded in the provided search results.""",
-        result_type=ResearchReport,
+        output_type=ResearchReport,
         name="synthesis_agent",
     )
 
@@ -98,6 +98,6 @@ def get_verification_agent() -> Agent[None, ValidationResult]:
         - Recommendations for improvement
 
         Be thorough but fair in your assessment.""",
-        result_type=ValidationResult,
+        output_type=ValidationResult,
         name="verification_agent",
     )
