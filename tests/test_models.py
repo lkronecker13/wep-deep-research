@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.research.models import (
+from src.models import (
     ResearchPlan,
     ResearchReport,
     SearchResult,

@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic_ai import Agent, WebSearchTool
 
-from src.research.models import (
+from src.models import (
     ResearchPlan,
     ResearchReport,
     SearchResult,

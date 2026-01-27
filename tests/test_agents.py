@@ -4,7 +4,7 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
-from src.research.agents import (
+from src.agents import (
     clear_agent_cache,
     create_gathering_agent,
     create_plan_agent,
@@ -15,7 +15,7 @@ from src.research.agents import (
     get_synthesis_agent,
     get_verification_agent,
 )
-from src.research.models import (
+from src.models import (
     ResearchPlan,
     ResearchReport,
     ValidationResult,
@@ -210,21 +210,21 @@ class TestModelConfiguration:
     """Tests for model configuration defaults."""
 
     def test__default_plan_model__contains_anthropic(self) -> None:
-        from src.research.agents import DEFAULT_PLAN_MODEL
+        from src.agents import DEFAULT_PLAN_MODEL
 
         assert "anthropic" in DEFAULT_PLAN_MODEL or "claude" in DEFAULT_PLAN_MODEL
 
     def test__default_gathering_model__contains_google(self) -> None:
-        from src.research.agents import DEFAULT_GATHERING_MODEL
+        from src.agents import DEFAULT_GATHERING_MODEL
 
         assert "google" in DEFAULT_GATHERING_MODEL or "gemini" in DEFAULT_GATHERING_MODEL
 
     def test__default_synthesis_model__contains_anthropic(self) -> None:
-        from src.research.agents import DEFAULT_SYNTHESIS_MODEL
+        from src.agents import DEFAULT_SYNTHESIS_MODEL
 
         assert "anthropic" in DEFAULT_SYNTHESIS_MODEL or "claude" in DEFAULT_SYNTHESIS_MODEL
 
     def test__default_verification_model__contains_anthropic(self) -> None:
-        from src.research.agents import DEFAULT_VERIFICATION_MODEL
+        from src.agents import DEFAULT_VERIFICATION_MODEL
 
         assert "anthropic" in DEFAULT_VERIFICATION_MODEL or "claude" in DEFAULT_VERIFICATION_MODEL

@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.research.exceptions import (
+from src.exceptions import (
     GatheringError,
     PlanningError,
     ResearchPipelineError,
