@@ -74,7 +74,11 @@ async def run_research(query: str) -> dict[str, object]:
                 summary_length=len(plan.executive_summary),
             )
             print(f"  Created {len(plan.web_search_steps)} search steps ({duration_ms}ms)")
-            print(f"  Plan: {plan.executive_summary[:200]}..." if len(plan.executive_summary) > 200 else f"  Plan: {plan.executive_summary}")
+            print(
+                f"  Plan: {plan.executive_summary[:200]}..."
+                if len(plan.executive_summary) > 200
+                else f"  Plan: {plan.executive_summary}"
+            )
             print()
         except Exception as e:
             log.exception("research.planning.failed", error=str(e))
@@ -177,7 +181,11 @@ async def run_research(query: str) -> dict[str, object]:
             if validation.issues_found:
                 print(f"  Issues: {len(validation.issues_found)} found")
             if validation.recommendations:
-                first_rec = validation.recommendations[0][:200] + "..." if len(validation.recommendations[0]) > 200 else validation.recommendations[0]
+                first_rec = (
+                    validation.recommendations[0][:200] + "..."
+                    if len(validation.recommendations[0]) > 200
+                    else validation.recommendations[0]
+                )
                 print(f"  Recommendation: {first_rec}")
             print()
         except Exception as e:
@@ -267,7 +275,7 @@ def _format_report_as_markdown(report: dict, query: str, validation: dict) -> st
         "",
         "## Summary",
         "",
-        report['summary'],
+        report["summary"],
         "",
         "---",
         "",
@@ -275,52 +283,60 @@ def _format_report_as_markdown(report: dict, query: str, validation: dict) -> st
         "",
     ]
 
-    for i, finding in enumerate(report['key_findings'], 1):
+    for i, finding in enumerate(report["key_findings"], 1):
         md_lines.append(f"{i}. {finding}")
         md_lines.append("")
 
-    md_lines.extend([
-        "---",
-        "",
-        "## Sources",
-        "",
-    ])
+    md_lines.extend(
+        [
+            "---",
+            "",
+            "## Sources",
+            "",
+        ]
+    )
 
-    for i, source in enumerate(report['sources'], 1):
+    for i, source in enumerate(report["sources"], 1):
         md_lines.append(f"{i}. [{source}]({source})")
 
-    md_lines.extend([
-        "",
-        "---",
-        "",
-        "## Limitations",
-        "",
-        report['limitations'],
-        "",
-        "---",
-        "",
-        "## Quality Validation",
-        "",
-        f"- **Valid:** {validation['is_valid']}",
-        f"- **Confidence Score:** {validation['confidence_score']:.2f}",
-    ])
+    md_lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## Limitations",
+            "",
+            report["limitations"],
+            "",
+            "---",
+            "",
+            "## Quality Validation",
+            "",
+            f"- **Valid:** {validation['is_valid']}",
+            f"- **Confidence Score:** {validation['confidence_score']:.2f}",
+        ]
+    )
 
-    if validation.get('issues_found'):
-        md_lines.extend([
-            "",
-            "**Issues Found:**",
-            "",
-        ])
-        for issue in validation['issues_found']:
+    if validation.get("issues_found"):
+        md_lines.extend(
+            [
+                "",
+                "**Issues Found:**",
+                "",
+            ]
+        )
+        for issue in validation["issues_found"]:
             md_lines.append(f"- {issue}")
 
-    if validation.get('recommendations'):
-        md_lines.extend([
-            "",
-            "**Recommendations:**",
-            "",
-        ])
-        for rec in validation['recommendations']:
+    if validation.get("recommendations"):
+        md_lines.extend(
+            [
+                "",
+                "**Recommendations:**",
+                "",
+            ]
+        )
+        for rec in validation["recommendations"]:
             md_lines.append(f"- {rec}")
 
     return "\n".join(md_lines)
