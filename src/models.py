@@ -43,3 +43,24 @@ class ValidationResult(BaseModel):
     confidence_score: float = Field(ge=0.0, le=1.0)
     issues_found: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
+
+
+class PhaseTimings(BaseModel):
+    """Timing metrics for each research phase."""
+
+    planning_ms: int = Field(ge=0)
+    gathering_ms: int = Field(ge=0)
+    synthesis_ms: int = Field(ge=0)
+    verification_ms: int = Field(ge=0)
+    total_ms: int = Field(ge=0)
+
+
+class ResearchResult(BaseModel):
+    """Complete result from a research workflow run."""
+
+    query: str = Field(min_length=1)
+    plan: ResearchPlan
+    search_results: list[SearchResult]
+    report: ResearchReport
+    validation: ValidationResult
+    timings: PhaseTimings

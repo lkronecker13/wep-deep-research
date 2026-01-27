@@ -157,3 +157,8 @@ run:
     @echo "🚀 Running main application..."
     uv run python -m src.main
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Start the FastAPI development server
+serve:
+    @echo "Starting development server..."
+    uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8000

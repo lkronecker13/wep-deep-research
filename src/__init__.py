@@ -21,12 +21,16 @@ from src.exceptions import (
     VerificationError,
 )
 from src.models import (
+    PhaseTimings,
     ResearchPlan,
     ResearchReport,
+    ResearchResult,
     SearchResult,
     SearchStep,
     ValidationResult,
 )
+from src.server import get_app
+from src.workflow import run_research_workflow
 
 __all__ = [
     # Models
@@ -35,6 +39,8 @@ __all__ = [
     "SearchResult",
     "ResearchReport",
     "ValidationResult",
+    "PhaseTimings",
+    "ResearchResult",
     # Agent factories
     "create_plan_agent",
     "create_gathering_agent",
@@ -53,4 +59,8 @@ __all__ = [
     "GatheringError",
     "SynthesisError",
     "VerificationError",
+    # Workflow
+    "run_research_workflow",
+    # Server
+    "get_app",
 ]
