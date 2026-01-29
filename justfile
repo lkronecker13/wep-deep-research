@@ -162,3 +162,9 @@ run:
 serve:
     @echo "Starting development server..."
     uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8000
+
+# Generate OpenAPI YAML specification
+export-openapi:
+    @echo "Generating OpenAPI YAML specification..."
+    uv run python -m src.export_openapi
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'

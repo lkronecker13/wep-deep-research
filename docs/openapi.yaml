@@ -1,0 +1,554 @@
+openapi: 3.1.0
+info:
+  title: Deep Research Service
+  description: "\nAI-powered deep research service using multi-agent workflows.\n\n\
+    ## Overview\n\nConducts comprehensive research on any topic using a 4-phase AI\
+    \ agent workflow:\n\n1. **Planning Agent** - Creates structured research plan\
+    \ with 1-5 targeted search steps\n2. **Gathering Agent** - Executes web searches\
+    \ in parallel to collect information\n3. **Synthesis Agent** - Combines findings\
+    \ into a coherent research report\n4. **Verification Agent** - Validates quality,\
+    \ accuracy, and completeness\n\n## Performance\n\n- **Duration**: 30-180 seconds\
+    \ depending on query complexity\n- **Cost**: ~$0.30-0.50 per query\n- **Models**:\
+    \ Claude Sonnet 4.5 (reasoning) + Gemini 2.5 Flash (parallel searches)\n\n## Architecture\n\
+    \nBuilt with PydanticAI, FastAPI, and DBOS for durable workflow execution.\n \
+    \       "
+  contact:
+    name: Wepoint
+    url: https://www.wepoint.com/
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  version: 0.1.0
+paths:
+  /research:
+    post:
+      tags:
+      - Research
+      summary: Execute Research Workflow
+      description: 'Conducts deep research using a 4-phase AI agent workflow.
+
+
+        ## Workflow Phases
+
+
+        1. **Planning** - Creates structured research plan with 1-5 search steps
+
+        2. **Gathering** - Executes web searches in parallel using Gemini 2.5 Flash
+
+        3. **Synthesis** - Combines findings into coherent report using Claude Sonnet
+        4.5
+
+        4. **Verification** - Validates quality and accuracy of the research
+
+
+        ## Performance
+
+
+        - **Duration**: 30-180 seconds depending on query complexity
+
+        - **Cost**: ~$0.30-0.50 per query (API costs)
+
+        - **Parallel Execution**: Multiple web searches execute simultaneously for
+        efficiency
+
+
+        ## Response Structure
+
+
+        Returns complete research results including:
+
+        - Original query
+
+        - Research plan with search steps
+
+        - Raw search results from all queries
+
+        - Synthesized research report with findings
+
+        - Quality validation results
+
+        - Timing metrics for each phase'
+      operationId: research_research_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchRequest'
+        required: true
+      responses:
+        '200':
+          description: Research completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchResult'
+        '422':
+          description: Research pipeline error (planning, gathering, synthesis, or
+            verification failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                planning_error:
+                  summary: Planning Error
+                  value:
+                    error: PlanningError
+                    detail: Unable to create research plan. Please try a different
+                      query.
+                gathering_error:
+                  summary: Gathering Error
+                  value:
+                    error: GatheringError
+                    detail: Unable to gather sufficient information. Please try again.
+                synthesis_error:
+                  summary: Synthesis Error
+                  value:
+                    error: SynthesisError
+                    detail: Unable to generate research report. Please try again.
+                verification_error:
+                  summary: Verification Error
+                  value:
+                    error: VerificationError
+                    detail: Unable to verify research quality. Please try again.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: InternalServerError
+                detail: An unexpected error occurred.
+  /health:
+    get:
+      tags:
+      - Health
+      summary: Health Check
+      description: 'General health check endpoint that returns service status and
+        version.
+
+
+        Use this endpoint for monitoring and smoke testing the service.'
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Service health status and version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /health/liveness:
+    get:
+      tags:
+      - Health
+      summary: Liveness Probe
+      description: 'Kubernetes liveness probe endpoint.
+
+
+        Returns 200 OK if the service is running and can accept requests.
+
+        If this endpoint fails, Kubernetes will restart the pod.
+
+
+        Does not include version information to minimize overhead.'
+      operationId: liveness_health_liveness_get
+      responses:
+        '200':
+          description: Service is alive and accepting requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /health/readiness:
+    get:
+      tags:
+      - Health
+      summary: Readiness Probe
+      description: 'Kubernetes readiness probe endpoint.
+
+
+        Returns 200 OK if the service is ready to handle research requests.
+
+        If this endpoint fails, Kubernetes will stop routing traffic to the pod.
+
+
+        Use this for load balancer health checks and deployment validation.'
+      operationId: readiness_health_readiness_get
+      responses:
+        '200':
+          description: Service is ready to handle research requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    ErrorResponse:
+      properties:
+        error:
+          type: string
+          title: Error
+          description: Error type (PlanningError, GatheringError, SynthesisError,
+            VerificationError, ValidationError, InternalServerError)
+          examples:
+          - GatheringError
+        detail:
+          type: string
+          title: Detail
+          description: User-friendly error message explaining what went wrong
+          examples:
+          - Unable to gather sufficient information. Please try again.
+      type: object
+      required:
+      - error
+      - detail
+      title: ErrorResponse
+      description: Structured error response.
+    HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+          description: Service health status
+          examples:
+          - ok
+        version:
+          type: string
+          title: Version
+          description: Service version (only included in /health endpoint)
+          default: ''
+          examples:
+          - 0.1.0
+      type: object
+      required:
+      - status
+      title: HealthResponse
+      description: Health check response.
+    PhaseTimings:
+      properties:
+        planning_ms:
+          type: integer
+          minimum: 0.0
+          title: Planning Ms
+          description: Time spent creating research plan (milliseconds)
+          examples:
+          - 3500
+        gathering_ms:
+          type: integer
+          minimum: 0.0
+          title: Gathering Ms
+          description: Time spent executing web searches in parallel (milliseconds)
+          examples:
+          - 12000
+        synthesis_ms:
+          type: integer
+          minimum: 0.0
+          title: Synthesis Ms
+          description: Time spent generating research report (milliseconds)
+          examples:
+          - 8000
+        verification_ms:
+          type: integer
+          minimum: 0.0
+          title: Verification Ms
+          description: Time spent validating report quality (milliseconds)
+          examples:
+          - 2500
+        total_ms:
+          type: integer
+          minimum: 0.0
+          title: Total Ms
+          description: Total workflow execution time (milliseconds)
+          examples:
+          - 26000
+      type: object
+      required:
+      - planning_ms
+      - gathering_ms
+      - synthesis_ms
+      - verification_ms
+      - total_ms
+      title: PhaseTimings
+      description: Timing metrics for each research phase.
+    ResearchPlan:
+      properties:
+        executive_summary:
+          type: string
+          title: Executive Summary
+          description: High-level overview of research strategy and approach
+          examples:
+          - Research quantum computing by exploring recent breakthroughs, practical
+            applications, and current limitations
+        web_search_steps:
+          items:
+            $ref: '#/components/schemas/SearchStep'
+          type: array
+          maxItems: 5
+          minItems: 1
+          title: Web Search Steps
+          description: 1-5 targeted web searches to execute in parallel
+          examples:
+          - - purpose: Identify recent technical advances
+              search_terms: quantum computing breakthroughs 2024
+            - purpose: Find practical use cases
+              search_terms: quantum computing applications industry
+        analysis_instructions:
+          type: string
+          title: Analysis Instructions
+          description: Guidance for synthesis agent on how to analyze and structure
+            findings
+          examples:
+          - Focus on recent developments, emphasize practical applications, note technical
+            limitations and challenges
+      type: object
+      required:
+      - executive_summary
+      - web_search_steps
+      - analysis_instructions
+      title: ResearchPlan
+      description: Structured research plan with search steps.
+    ResearchReport:
+      properties:
+        title:
+          type: string
+          title: Title
+          description: Concise title summarizing the research topic
+          examples:
+          - 'Recent Advances in Quantum Computing: 2024 Analysis'
+        summary:
+          type: string
+          title: Summary
+          description: Executive summary synthesizing all findings into a coherent
+            narrative
+          examples:
+          - Quantum computing achieved significant breakthroughs in 2024, with major
+            advances in error correction and qubit scalability...
+        key_findings:
+          items:
+            type: string
+          type: array
+          title: Key Findings
+          description: Bullet-point list of the most important discoveries and insights
+          examples:
+          - - Error correction techniques reduced qubit error rates by 50%
+            - Commercial applications now viable in drug discovery and cryptography
+            - Hardware costs remain a barrier to widespread adoption
+        sources:
+          items:
+            type: string
+          type: array
+          title: Sources
+          description: Complete list of URLs cited in the report
+          examples:
+          - - https://www.nature.com/articles/quantum-2024
+            - https://research.ibm.com/quantum
+            - https://quantumcomputing.com/industry-report
+        limitations:
+          type: string
+          title: Limitations
+          description: Acknowledged gaps, uncertainties, or constraints in the research
+          default: ''
+          examples:
+          - Limited data on long-term stability; most sources focus on recent developments
+            only
+      type: object
+      required:
+      - title
+      - summary
+      title: ResearchReport
+      description: Final synthesized research report.
+    ResearchRequest:
+      properties:
+        query:
+          type: string
+          maxLength: 1000
+          minLength: 1
+          title: Query
+          description: Research question to investigate (1-1000 characters)
+          examples:
+          - What are the latest developments in quantum computing?
+      type: object
+      required:
+      - query
+      title: ResearchRequest
+      description: Incoming research request.
+    ResearchResult:
+      properties:
+        query:
+          type: string
+          minLength: 1
+          title: Query
+          description: Original research question that was submitted
+          examples:
+          - What are the latest developments in quantum computing?
+        plan:
+          $ref: '#/components/schemas/ResearchPlan'
+          description: Structured research plan created by planning agent
+        search_results:
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          type: array
+          title: Search Results
+          description: Raw search results from all executed web searches
+        report:
+          $ref: '#/components/schemas/ResearchReport'
+          description: Final synthesized research report
+        validation:
+          $ref: '#/components/schemas/ValidationResult'
+          description: Quality validation results from verification agent
+        timings:
+          $ref: '#/components/schemas/PhaseTimings'
+          description: Performance metrics for each workflow phase
+      type: object
+      required:
+      - query
+      - plan
+      - search_results
+      - report
+      - validation
+      - timings
+      title: ResearchResult
+      description: Complete result from a research workflow run.
+      examples:
+      - plan:
+          analysis_instructions: Focus on recent developments, emphasize practical
+            applications, note technical limitations and challenges
+          executive_summary: Research quantum computing by exploring recent breakthroughs,
+            practical applications, and current limitations
+          web_search_steps:
+          - purpose: Identify recent technical advances
+            search_terms: quantum computing breakthroughs 2024
+          - purpose: Find practical use cases
+            search_terms: quantum computing applications industry
+        query: What are the latest developments in quantum computing?
+        report:
+          key_findings:
+          - Error correction techniques reduced qubit error rates by 50%
+          - Commercial applications now viable in drug discovery and cryptography
+          - Hardware costs remain a barrier to widespread adoption
+          limitations: Limited data on long-term stability; most sources focus on
+            recent developments only
+          sources:
+          - https://www.nature.com/articles/quantum-2024
+          - https://research.ibm.com/quantum
+          - https://quantumcomputing.com/industry-report
+          summary: Quantum computing achieved significant breakthroughs in 2024, with
+            major advances in error correction and qubit scalability...
+          title: 'Recent Advances in Quantum Computing: 2024 Analysis'
+        search_results:
+        - findings:
+          - Google achieved quantum error correction breakthrough in 2024
+          - IBM announced 127-qubit quantum processor with improved coherence times
+          query: quantum computing breakthroughs 2024
+          sources:
+          - https://www.nature.com/articles/quantum-2024
+          - https://research.ibm.com/quantum
+        timings:
+          gathering_ms: 12000
+          planning_ms: 3500
+          synthesis_ms: 8000
+          total_ms: 26000
+          verification_ms: 2500
+        validation:
+          confidence_score: 0.85
+          is_valid: true
+          issues_found:
+          - Limited geographic diversity in sources
+          recommendations:
+          - Add more peer-reviewed sources
+          - Expand analysis of emerging competitors
+    SearchResult:
+      properties:
+        query:
+          type: string
+          title: Query
+          description: The search query that was executed
+          examples:
+          - quantum computing breakthroughs 2024
+        findings:
+          items:
+            type: string
+          type: array
+          title: Findings
+          description: Key facts and insights discovered from this search
+          examples:
+          - - Google achieved quantum error correction breakthrough in 2024
+            - IBM announced 127-qubit quantum processor with improved coherence times
+        sources:
+          items:
+            type: string
+          type: array
+          title: Sources
+          description: URLs of web sources where findings were discovered
+          examples:
+          - - https://www.nature.com/articles/quantum-2024
+            - https://research.ibm.com/quantum
+      type: object
+      required:
+      - query
+      title: SearchResult
+      description: Results from a web search query.
+    SearchStep:
+      properties:
+        search_terms:
+          type: string
+          minLength: 1
+          title: Search Terms
+          description: Search query terms to execute
+          examples:
+          - quantum computing breakthroughs 2024
+        purpose:
+          type: string
+          minLength: 1
+          title: Purpose
+          description: Goal or rationale for this search step
+          examples:
+          - Identify recent technical advances in quantum error correction
+      type: object
+      required:
+      - search_terms
+      - purpose
+      title: SearchStep
+      description: A single web search step in the research plan.
+    ValidationResult:
+      properties:
+        is_valid:
+          type: boolean
+          title: Is Valid
+          description: Whether the research report meets quality standards
+          examples:
+          - true
+        confidence_score:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence Score
+          description: Quality score from 0.0 (lowest) to 1.0 (highest) based on completeness,
+            accuracy, and source quality
+          examples:
+          - 0.85
+        issues_found:
+          items:
+            type: string
+          type: array
+          title: Issues Found
+          description: List of quality issues or concerns identified during validation
+          examples:
+          - - Limited geographic diversity in sources
+            - Some claims lack direct citations
+        recommendations:
+          items:
+            type: string
+          type: array
+          title: Recommendations
+          description: Suggested improvements or additional research directions
+          examples:
+          - - Add more peer-reviewed sources
+            - Expand analysis of emerging competitors
+      type: object
+      required:
+      - is_valid
+      - confidence_score
+      title: ValidationResult
+      description: Quality validation of research report.
