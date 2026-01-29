@@ -192,6 +192,9 @@ research/models/
 research/experiments/results/
 *.ipynb_checkpoints
 
+# Research batch testing outputs
+research/outputs/batch/
+
 # Logs
 logs/
 *.log
