@@ -4,8 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 from src.models import (
+    PhaseTimings,
     ResearchPlan,
     ResearchReport,
+    ResearchResult,
     SearchResult,
     SearchStep,
     ValidationResult,
@@ -204,4 +206,83 @@ class TestValidationResult:
         )
         json_data = result.model_dump_json()
         restored = ValidationResult.model_validate_json(json_data)
+        assert restored == result
+
+
+class TestPhaseTimings:
+    """Tests for PhaseTimings model."""
+
+    def test__valid_creation__succeeds(self) -> None:
+        timings = PhaseTimings(planning_ms=100, gathering_ms=200, synthesis_ms=300, verification_ms=400, total_ms=1000)
+        assert timings.planning_ms == 100
+        assert timings.total_ms == 1000
+
+    def test__zero_values__succeeds(self) -> None:
+        timings = PhaseTimings(planning_ms=0, gathering_ms=0, synthesis_ms=0, verification_ms=0, total_ms=0)
+        assert timings.planning_ms == 0
+
+    def test__negative_value__raises_validation_error(self) -> None:
+        with pytest.raises(ValidationError):
+            PhaseTimings(planning_ms=-1, gathering_ms=0, synthesis_ms=0, verification_ms=0, total_ms=0)
+
+    def test__roundtrip_serialization__preserves_data(self) -> None:
+        timings = PhaseTimings(planning_ms=10, gathering_ms=20, synthesis_ms=30, verification_ms=40, total_ms=100)
+        json_data = timings.model_dump_json()
+        restored = PhaseTimings.model_validate_json(json_data)
+        assert restored == timings
+
+
+class TestResearchResult:
+    """Tests for ResearchResult model."""
+
+    def test__valid_creation__succeeds(self) -> None:
+        # build all sub-models
+        plan = ResearchPlan(
+            executive_summary="Summary",
+            web_search_steps=[SearchStep(search_terms="q", purpose="p")],
+            analysis_instructions="Instructions",
+        )
+        result = ResearchResult(
+            query="test query",
+            plan=plan,
+            search_results=[SearchResult(query="q", findings=["f"], sources=["s"])],
+            report=ResearchReport(title="T", summary="S", key_findings=["kf"], sources=["src"]),
+            validation=ValidationResult(is_valid=True, confidence_score=0.9),
+            timings=PhaseTimings(planning_ms=10, gathering_ms=20, synthesis_ms=30, verification_ms=40, total_ms=100),
+        )
+        assert result.query == "test query"
+        assert len(result.search_results) == 1
+
+    def test__empty_query__raises_validation_error(self) -> None:
+        plan = ResearchPlan(
+            executive_summary="Summary",
+            web_search_steps=[SearchStep(search_terms="q", purpose="p")],
+            analysis_instructions="Instructions",
+        )
+        with pytest.raises(ValidationError):
+            ResearchResult(
+                query="",
+                plan=plan,
+                search_results=[],
+                report=ResearchReport(title="T", summary="S"),
+                validation=ValidationResult(is_valid=True, confidence_score=0.9),
+                timings=PhaseTimings(planning_ms=0, gathering_ms=0, synthesis_ms=0, verification_ms=0, total_ms=0),
+            )
+
+    def test__roundtrip_serialization__preserves_data(self) -> None:
+        plan = ResearchPlan(
+            executive_summary="Summary",
+            web_search_steps=[SearchStep(search_terms="q", purpose="p")],
+            analysis_instructions="Instructions",
+        )
+        result = ResearchResult(
+            query="test query",
+            plan=plan,
+            search_results=[SearchResult(query="q")],
+            report=ResearchReport(title="T", summary="S"),
+            validation=ValidationResult(is_valid=True, confidence_score=0.9),
+            timings=PhaseTimings(planning_ms=10, gathering_ms=20, synthesis_ms=30, verification_ms=40, total_ms=100),
+        )
+        json_data = result.model_dump_json()
+        restored = ResearchResult.model_validate_json(json_data)
         assert restored == result

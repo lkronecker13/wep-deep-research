@@ -52,20 +52,45 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 export GEMINI_API_KEY="..."
 ```
 
-### Run Your First Research Query
+### Option 1: REST API (Production)
 
 ```bash
-python -m research.run_research "What are the latest developments in quantum computing?"
+# Start FastAPI server
+just serve
+
+# In another terminal, execute research via API
+curl -X POST http://localhost:8000/research \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What are the latest developments in quantum computing?"}'
 ```
 
-**Output:** Results are saved to `research/outputs/research_YYYY-MM-DD_HH-MM-SS.json`
+**Response:** Full `ResearchResult` JSON with plan, search results, report, validation, and timings (30-180s)
 
-### View Results
+### Option 2: CLI (POC Reference)
 
 ```bash
-# Pretty-print the latest result
+# Run research via CLI
+python -m research.run_research "What are the latest developments in quantum computing?"
+
+# Output saved to research/outputs/research_YYYY-MM-DD_HH-MM-SS.json
 cat research/outputs/research_*.json | jq '.report.key_findings'
 ```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/research` | POST | Execute research workflow (30-180s) |
+| `/health` | GET | Service health check |
+| `/health/liveness` | GET | Kubernetes liveness probe |
+| `/health/readiness` | GET | Kubernetes readiness probe |
+
+**Request body:**
+```json
+{"query": "Your research question here"}
+```
+
+**Response:** `ResearchResult` with plan, search_results, report, validation, timings
 
 ---
 
@@ -183,23 +208,37 @@ We use different LLM models optimized for different tasks:
 
 ```
 wep-deep-research/
-├── research/                    # Phase 1 POC (current)
+├── research/                    # Phase 1 POC (reference implementation)
 │   ├── models.py                # Pydantic models (5 models)
 │   ├── agents.py                # PydanticAI agents (4 agents)
 │   ├── run_research.py          # CLI + workflow orchestration
 │   └── outputs/                 # JSON results (gitignored)
 │
-├── src/                         # Core application (future phases)
-│   ├── logging.py               # Production logging system
-│   └── ...
+├── src/                         # Production application (Phase 2 ✅)
+│   ├── agents.py                # 4 PydanticAI agents (plan, gather, synthesize, verify)
+│   ├── models.py                # Pydantic models + PhaseTimings, ResearchResult
+│   ├── workflow.py              # Production 4-phase async pipeline (156 lines)
+│   ├── server.py                # FastAPI app with /research endpoint (106 lines)
+│   ├── exceptions.py            # Custom exceptions (PlanningError, GatheringError, etc.)
+│   └── logging.py               # Production logging (structlog)
 │
-├── tests/                       # Test suite
-│   └── test_logging.py          # Example tests
+├── tests/                       # Test suite (95% coverage)
+│   ├── test_agents.py           # Agent creation tests
+│   ├── test_logging.py          # Logging tests
+│   ├── test_models.py           # Model validation tests
+│   ├── test_workflow.py         # Workflow pipeline tests (232 lines)
+│   └── test_server.py           # API endpoint tests (189 lines)
 │
-├── docs/                        # Technical documentation (local only)
+├── docs/                        # Technical documentation
+│   ├── AGENT_ARCHITECTURE.md    # Agent design patterns
+│   ├── ARCHITECTURE_DECISIONS.md # ADRs for key decisions
+│   ├── IMPLEMENTATION_GUIDE.md  # Practical implementation guide
+│   └── research/                # Research documents
+│       └── gcp-cloud-run-sse-limits.md  # GCP SSE deployment guide
 │
 ├── pyproject.toml               # Dependencies and config
 ├── justfile                     # Development automation
+├── SSE_STREAMING_PLAN.md        # Phase 2.5 implementation plan
 └── README.md                    # This file
 ```
 
@@ -291,29 +330,67 @@ Example: `test__plan_agent__creates_valid_research_plan`
 
 **Typical performance:** Research query completes in < 2 minutes, costs $0.30-$0.50
 
-### 🚧 Phase 2: Local Service (Planned - 1-2 weeks)
+### ✅ Phase 2: Production Service (Complete)
 
-**Goal:** FastAPI REST service with durable execution
+**Status:** Production-ready FastAPI service
+**Location:** `src/` folder
+**Completed:**
+- ✅ FastAPI REST API with `/research` endpoint
+- ✅ Production 4-phase workflow (`src/workflow.py`)
+- ✅ Structured error handling with sanitized client messages
+- ✅ Health check endpoints (`/health`, `/health/liveness`, `/health/readiness`)
+- ✅ Comprehensive test suite (115 tests, 95% coverage)
+- ✅ Type-safe models (PhaseTimings, ResearchResult)
+- ✅ Production logging with correlation IDs
+
+**Deferred to Phase 3:**
+- DBOS durability (add if needed for long workflows)
+- Repository pattern (stateless API doesn't require)
+- Domain events (simpler without for now)
+
+**API Usage:**
+```bash
+# Start server
+just serve
+
+# Execute research workflow
+curl -X POST http://localhost:8000/research \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is quantum computing?"}'
+
+# Returns ResearchResult JSON (30-180s)
+```
+
+### 🚧 Phase 2.5: SSE Streaming (Planned - 1 week)
+
+**Goal:** Real-time progress updates via Server-Sent Events
 
 **Key additions:**
-- FastAPI endpoints for research workflows
-- DBOS-backed durability (PostgreSQL)
-- Workflow resumption on failure
-- Repository pattern for persistence
-- Domain events for state tracking
-- Comprehensive test suite (80%+ coverage)
+- `POST /research/stream` - Stream phase-level progress events
+- 7 event types (phase_start, phase_complete, gathering_progress, heartbeat, complete, error, phase_warning)
+- Pattern C cleanup (guarantees background task cancellation on disconnect)
+- GCP Cloud Run optimized (600s timeout, 30s heartbeats, proxy buffering prevention)
+- Comprehensive SSE testing (client disconnect scenarios)
+
+**Documentation:**
+- `SSE_STREAMING_PLAN.md` - Complete implementation plan
+- `docs/research/gcp-cloud-run-sse-limits.md` - GCP deployment guide
+- `SKILL_UPDATE_2026-01-28_sse-streaming.md` - Best practices
+
+**Benefits:** Users see real-time progress during 30-180s workflows
 
 ### 📋 Phase 3: Production Deployment (Future - 2-3 weeks)
 
 **Goal:** Production-ready service on GCP
 
 **Key additions:**
-- Cloud Run deployment
+- Cloud Run deployment with streaming support
 - Logfire observability and cost tracking
 - API authentication and rate limiting
 - Monitoring dashboards and alerts
 - Load testing and performance optimization
 - Production runbook
+- Optional: DBOS durability for workflow resumption
 
 ---
 
@@ -324,12 +401,15 @@ Example: `test__plan_agent__creates_valid_research_plan`
 Core dependencies:
 - `pydantic-ai[anthropic,google]>=0.2.0` - AI agent framework with model providers
 - `pydantic>=2.11.0` - Data validation
-- `annotated-types>=0.7.0` - Type constraints (MaxLen)
+- `fastapi>=0.115.0` - REST API framework
+- `uvicorn[standard]>=0.30.0` - ASGI server
+- `structlog>=25.1.0` - Production logging
 - `anthropic>=0.76.0` - Claude API client
 - `google-genai>=1.59.0` - Gemini API client
 
 Development dependencies:
 - `pytest>=9.0.0` - Testing framework
+- `httpx>=0.27.0` - Async HTTP client for testing
 - `mypy>=1.19.0` - Type checking
 - `ruff>=0.14.0` - Linting and formatting
 
@@ -347,10 +427,27 @@ export GEMINI_API_KEY="..."            # Get from https://aistudio.google.com/ap
 
 ## Learn More
 
+### Project Documentation
+
+- **Architecture & Design:**
+  - `docs/AGENT_ARCHITECTURE.md` - Agent design patterns and orchestration
+  - `docs/ARCHITECTURE_DECISIONS.md` - ADRs for key technical decisions
+  - `docs/IMPLEMENTATION_GUIDE.md` - Practical implementation guide
+
+- **SSE Streaming (Phase 2.5):**
+  - `SSE_STREAMING_PLAN.md` - Complete implementation plan for streaming endpoint
+  - `docs/research/gcp-cloud-run-sse-limits.md` - GCP Cloud Run deployment guide
+  - `SKILL_UPDATE_2026-01-28_sse-streaming.md` - SSE best practices and patterns
+
+- **Development:**
+  - `CLAUDE.md` - Development standards and guidelines
+  - `pyproject.toml` - Dependencies and configuration
+
 ### External Resources
 
 - [PydanticAI Documentation](https://ai.pydantic.dev/) - Agent framework
 - [Pydantic Stack Demo](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec) - Reference implementation
+- [FastAPI Documentation](https://fastapi.tiangolo.com/) - REST API framework
 - [Claude API Documentation](https://docs.anthropic.com/) - Anthropic API
 - [Gemini API Documentation](https://ai.google.dev/) - Google AI
 
@@ -358,11 +455,11 @@ export GEMINI_API_KEY="..."            # Get from https://aistudio.google.com/ap
 
 **Multi-agent workflows:** Breaking complex tasks into specialized agent roles improves quality and maintainability
 
-**Durable execution:** Long-running workflows that can resume on failure (Phase 2 feature with DBOS)
+**Phase-level streaming:** Real-time progress updates via SSE keep users informed during long workflows (30-180s)
 
 **Type-safe AI:** Using Pydantic for structured LLM outputs catches errors early and improves reliability
 
-**Cost optimization:** Strategic model selection balances quality and cost for production viability
+**Cost optimization:** Strategic model selection balances quality and cost for production viability (Gemini for parallel searches, Claude for reasoning)
 
 ---
 
@@ -396,8 +493,13 @@ Apache License 2.0 - See [LICENSE](LICENSE) file.
 
 ## Status
 
-**Current Phase:** 1 (POC) ✅
-**Next Phase:** 2 (Local Service) 🚧
+**Current Phase:** Phase 2 Complete ✅ | Phase 2.5 Planned 🚧
 **Production Ready:** Phase 3 📋
 
-*Last updated: 2026-01-20*
+### What's Deployed
+- ✅ **Phase 1:** POC CLI (`research/`) - Functional prototype
+- ✅ **Phase 2:** Production API (`src/`) - FastAPI service with 95% test coverage
+- 🚧 **Phase 2.5:** SSE Streaming - Implementation plan ready
+- 📋 **Phase 3:** GCP Deployment - Future work
+
+*Last updated: 2026-01-28*
