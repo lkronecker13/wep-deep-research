@@ -149,39 +149,14 @@ research query:
     @echo "✅ Research complete! Check research/outputs/ for results"
 
 # ----------------------------
-# Research POC - Batch Testing
+# Research POC - Dataset Export
 # ----------------------------
 
-# Run batch test on N random questions
-batch-sample size="10":
-    @echo "🔬 Running batch test on {{ size }} random questions..."
+# Export test dataset to JSON
+export-dataset path="research/test_dataset.json":
+    @echo "Exporting test dataset to JSON..."
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    uv run python -m research.batch_runner --mode sample --size {{ size }}
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    @echo "✅ Batch test complete! Check research/outputs/batch/"
-
-# Run batch test on specific category
-batch-category category:
-    @echo "🔬 Running batch test on category: {{ category }}"
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    uv run python -m research.batch_runner --mode category --category {{ category }}
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    @echo "✅ Batch test complete! Check research/outputs/batch/"
-
-# Run full batch test (all questions)
-batch-full:
-    @echo "🔬 Running FULL batch test (100+ questions)..."
-    @echo "⚠️  This will take significant time and API credits!"
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    uv run python -m research.batch_runner --mode full
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    @echo "✅ Batch test complete! Check research/outputs/batch/"
-
-# View latest batch summary
-batch-summary:
-    @echo "📊 Latest batch test summary..."
-    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    @ls -t research/outputs/batch/summary/ | head -1 | xargs -I {} cat research/outputs/batch/summary/{}
+    uv run python -m research.test_dataset {{ path }}
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
 
 # ----------------------------

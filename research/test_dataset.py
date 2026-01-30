@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 from enum import Enum
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -766,3 +767,75 @@ def get_test_dataset() -> TestDataset:
     ]
 
     return TestDataset(version="1.0.0", questions=questions)
+
+
+def export_dataset_to_json(output_path: str | Path = "research/test_dataset.json") -> Path:
+    """Export the complete test dataset to a JSON file.
+
+    Creates a pretty-printed JSON file containing all test questions with metadata.
+    The output directory is created if it doesn't exist.
+
+    Args:
+        output_path: Destination path for JSON export. Can be relative or absolute.
+            Default: research/test_dataset.json
+
+    Returns:
+        Path: Absolute path to the exported file
+
+    Raises:
+        ValueError: If path is outside allowed directories
+        OSError: If unable to create output directory or write file
+
+    Example:
+        >>> export_dataset_to_json()  # Uses default path
+        >>> export_dataset_to_json("data/questions.json")  # Custom path
+    """
+    from pathlib import Path
+
+    dataset = get_test_dataset()
+    output_file = Path(output_path).resolve()  # Resolve to absolute path
+
+    # Validate path is within project or research directory (security)
+    # Allow /tmp for testing purposes
+    allowed_dirs = [
+        Path.cwd().resolve(),
+        (Path.cwd() / "research").resolve(),
+        Path("/tmp").resolve(),
+        Path("/private/var/folders").resolve(),  # macOS tmp
+    ]
+
+    if not any(output_file.is_relative_to(d) for d in allowed_dirs):
+        raise ValueError(f"Output path must be within project directory. Got: {output_file}")
+
+    # Ensure directory exists
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Export with pretty formatting
+    output_file.write_text(dataset.model_dump_json(indent=2))
+
+    print(f"Dataset exported to: {output_file}")
+    print(f"   Total questions: {len(dataset.questions)}")
+    print(f"   Categories: {len(set(q.category for q in dataset.questions))}")
+
+    return output_file
+
+
+if __name__ == "__main__":
+    """CLI entry point for exporting dataset."""
+    import sys
+
+    try:
+        output_path = sys.argv[1] if len(sys.argv) > 1 else "research/test_dataset.json"
+        export_dataset_to_json(output_path)
+    except ValueError as e:
+        print(f"Error: Invalid path - {e}", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError as e:
+        print(f"Error: Permission denied - {e}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as e:
+        print(f"Error: File system error - {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: Unexpected error - {e}", file=sys.stderr)
+        sys.exit(1)

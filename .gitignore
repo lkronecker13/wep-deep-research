@@ -192,8 +192,8 @@ research/models/
 research/experiments/results/
 *.ipynb_checkpoints
 
-# Research batch testing outputs
-research/outputs/batch/
+# Test dataset JSON export (can be regenerated)
+research/test_dataset.json
 
 # Logs
 logs/
