@@ -1,4 +1,4 @@
-"""Unit tests for test dataset export functionality."""
+"""Unit tests for evaluation dataset export functionality."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from research.test_dataset import export_dataset_to_json, get_test_dataset
+from research.evaluation_dataset import export_dataset_to_json, get_evaluation_dataset
 
 
 def test__export_dataset_to_json__creates_valid_file(tmp_path: Path) -> None:
@@ -81,17 +81,17 @@ def test__export_dataset_to_json__produces_pretty_json(tmp_path: Path) -> None:
     assert content.count("\n") > 100  # Should be multi-line
 
 
-def test__get_test_dataset__returns_100_questions() -> None:
+def test__get_evaluation_dataset__returns_100_questions() -> None:
     """Should return dataset with 100 questions."""
-    dataset = get_test_dataset()
+    dataset = get_evaluation_dataset()
 
     assert len(dataset.questions) == 100
     assert dataset.version == "1.0.0"
 
 
-def test__get_test_dataset__has_all_categories() -> None:
+def test__get_evaluation_dataset__has_all_categories() -> None:
     """Should include questions from all 8 categories."""
-    dataset = get_test_dataset()
+    dataset = get_evaluation_dataset()
     categories = {q.category for q in dataset.questions}
 
     expected_categories = {

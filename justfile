@@ -152,11 +152,11 @@ research query:
 # Research POC - Dataset Export
 # ----------------------------
 
-# Export test dataset to JSON
-export-dataset path="research/test_dataset.json":
-    @echo "Exporting test dataset to JSON..."
+# Export evaluation dataset to JSON
+export-dataset path="research/evaluation_dataset.json":
+    @echo "Exporting evaluation dataset to JSON..."
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    uv run python -m research.test_dataset {{ path }}
+    uv run python -m research.evaluation_dataset {{ path }}
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
 
 # ----------------------------
