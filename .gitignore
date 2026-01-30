@@ -192,6 +192,9 @@ research/models/
 research/experiments/results/
 *.ipynb_checkpoints
 
+# Evaluation dataset JSON export (can be regenerated)
+research/evaluation_dataset.json
+
 # Logs
 logs/
 *.log

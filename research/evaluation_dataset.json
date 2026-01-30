@@ -1,0 +1,805 @@
+{
+  "version": "1.0.0",
+  "questions": [
+    {
+      "id": "tech_001",
+      "query": "What is PydanticAI and how does it differ from LangChain?",
+      "category": "technical",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": "Test understanding of modern AI frameworks"
+    },
+    {
+      "id": "tech_002",
+      "query": "Explain the architecture and benefits of retrieval-augmented generation (RAG) systems",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "tech_003",
+      "query": "What are the latest advancements in transformer model architectures as of 2025?",
+      "category": "technical",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": "Requires recent information"
+    },
+    {
+      "id": "tech_004",
+      "query": "How does fine-tuning differ from prompt engineering for LLM customization?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "tech_005",
+      "query": "What are the key techniques for reducing hallucinations in large language models?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "tech_006",
+      "query": "Explain vector databases and their role in semantic search applications",
+      "category": "technical",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "tech_007",
+      "query": "What is the difference between Docker and Kubernetes in container orchestration?",
+      "category": "technical",
+      "difficulty": "easy",
+      "expected_sources": 4,
+      "notes": ""
+    },
+    {
+      "id": "tech_008",
+      "query": "How do graph neural networks differ from traditional neural networks?",
+      "category": "technical",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "tech_009",
+      "query": "What are the main architectural patterns for microservices communication?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "tech_010",
+      "query": "Explain zero-shot, few-shot, and chain-of-thought prompting techniques",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "tech_011",
+      "query": "What are the security considerations for deploying AI models in production?",
+      "category": "technical",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "tech_012",
+      "query": "How does federated learning enable privacy-preserving machine learning?",
+      "category": "technical",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "tech_013",
+      "query": "What is the role of attention mechanisms in modern neural architectures?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "tech_014",
+      "query": "Explain the concept of model quantization and its impact on inference speed",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "tech_015",
+      "query": "What are the latest techniques for efficient long-context processing in LLMs?",
+      "category": "technical",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": "Requires 2025 information"
+    },
+    {
+      "id": "tech_016",
+      "query": "How do continuous integration and continuous deployment (CI/CD) pipelines work?",
+      "category": "technical",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "tech_017",
+      "query": "What are the key differences between SQL and NoSQL databases?",
+      "category": "technical",
+      "difficulty": "easy",
+      "expected_sources": 4,
+      "notes": ""
+    },
+    {
+      "id": "tech_018",
+      "query": "Explain the concept of event-driven architecture and its use cases",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "tech_019",
+      "query": "What are multimodal AI models and what capabilities do they enable?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "tech_020",
+      "query": "How do recommendation systems use collaborative filtering and content-based approaches?",
+      "category": "technical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "biz_001",
+      "query": "What are the key factors driving the adoption of AI in small businesses?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "biz_002",
+      "query": "How has remote work affected commercial real estate markets since 2020?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "biz_003",
+      "query": "What are the main competitive strategies for SaaS companies in 2025?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "biz_004",
+      "query": "Explain the subscription economy and its impact on traditional retail",
+      "category": "business",
+      "difficulty": "easy",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "biz_005",
+      "query": "What are the economic implications of the gig economy on labor markets?",
+      "category": "business",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "biz_006",
+      "query": "How do venture capital firms evaluate early-stage startups?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "biz_007",
+      "query": "What are the key metrics for measuring SaaS business health and growth?",
+      "category": "business",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "biz_008",
+      "query": "How has e-commerce disrupted traditional retail supply chains?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "biz_009",
+      "query": "What are the main challenges facing the electric vehicle market in 2025?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "biz_010",
+      "query": "Explain the concept of platform business models and network effects",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "biz_011",
+      "query": "What are the primary factors influencing cryptocurrency market volatility?",
+      "category": "business",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "biz_012",
+      "query": "How do companies use customer lifetime value (CLV) for strategic decisions?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "biz_013",
+      "query": "What are the key considerations for pricing strategies in B2B SaaS?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "biz_014",
+      "query": "How has AI automation affected job markets across different industries?",
+      "category": "business",
+      "difficulty": "hard",
+      "expected_sources": 11,
+      "notes": ""
+    },
+    {
+      "id": "biz_015",
+      "query": "What are the main drivers of success for marketplace businesses?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "biz_016",
+      "query": "Explain the concept of blue ocean strategy versus red ocean competition",
+      "category": "business",
+      "difficulty": "easy",
+      "expected_sources": 4,
+      "notes": ""
+    },
+    {
+      "id": "biz_017",
+      "query": "What are the economic impacts of carbon pricing policies on industries?",
+      "category": "business",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "biz_018",
+      "query": "How do companies measure and optimize customer acquisition cost (CAC)?",
+      "category": "business",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "biz_019",
+      "query": "What are the key trends in direct-to-consumer (D2C) brand strategies?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "biz_020",
+      "query": "How has fintech disrupted traditional banking services?",
+      "category": "business",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "sci_001",
+      "query": "What are the latest findings on CRISPR gene editing safety and efficacy?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "sci_002",
+      "query": "Explain the current scientific understanding of long COVID symptoms and treatments",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 12,
+      "notes": ""
+    },
+    {
+      "id": "sci_003",
+      "query": "What are the main theories explaining the accelerated expansion of the universe?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "sci_004",
+      "query": "How do mRNA vaccines work and what makes them different from traditional vaccines?",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "sci_005",
+      "query": "What are the latest developments in quantum computing hardware?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 11,
+      "notes": ""
+    },
+    {
+      "id": "sci_006",
+      "query": "Explain the role of the gut microbiome in human health and disease",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "sci_007",
+      "query": "What are the current theories on the origin of consciousness?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "sci_008",
+      "query": "How does neuroplasticity enable the brain to adapt and reorganize?",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "sci_009",
+      "query": "What are the main approaches to developing fusion energy power plants?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "sci_010",
+      "query": "Explain the evidence for and against the simulation hypothesis",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "sci_011",
+      "query": "What are the latest discoveries about exoplanets in habitable zones?",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "sci_012",
+      "query": "How do CRISPR-based diagnostics work for disease detection?",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "sci_013",
+      "query": "What are the main mechanisms behind aging at the cellular level?",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "sci_014",
+      "query": "Explain the current state of research on artificial photosynthesis",
+      "category": "scientific",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "sci_015",
+      "query": "What are the key findings from recent studies on ocean acidification impacts?",
+      "category": "scientific",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "hist_001",
+      "query": "What were the key events leading to the fall of the Berlin Wall in 1989?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "hist_002",
+      "query": "How did the Manhattan Project develop the first atomic bomb?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "hist_003",
+      "query": "What factors led to the 2008 financial crisis?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "hist_004",
+      "query": "Explain the key milestones in the history of the internet from ARPANET to today",
+      "category": "historical",
+      "difficulty": "easy",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "hist_005",
+      "query": "What were the main causes and consequences of the Industrial Revolution?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "hist_006",
+      "query": "How did the printing press change society in Renaissance Europe?",
+      "category": "historical",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "hist_007",
+      "query": "What were the key technological innovations during the Space Race?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "hist_008",
+      "query": "How did the green revolution transform global agriculture?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "hist_009",
+      "query": "What were the main factors that led to the dot-com bubble and its burst?",
+      "category": "historical",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "hist_010",
+      "query": "How did the invention of the transistor revolutionize electronics?",
+      "category": "historical",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "comp_001",
+      "query": "Compare and contrast supervised learning versus unsupervised learning in machine learning",
+      "category": "comparative",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "comp_002",
+      "query": "What are the key differences between agile and waterfall project management methodologies?",
+      "category": "comparative",
+      "difficulty": "easy",
+      "expected_sources": 4,
+      "notes": ""
+    },
+    {
+      "id": "comp_003",
+      "query": "Compare the capabilities and limitations of GPT-4 versus Claude 3",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "comp_004",
+      "query": "How do solar and wind energy compare in terms of efficiency and scalability?",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "comp_005",
+      "query": "What are the differences between centralized and decentralized blockchain architectures?",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "comp_006",
+      "query": "Compare the economic systems of capitalism and socialism",
+      "category": "comparative",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "comp_007",
+      "query": "How do relational and graph databases differ in structure and use cases?",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "comp_008",
+      "query": "Compare inductive versus deductive reasoning in scientific research",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "comp_009",
+      "query": "What are the key differences between React, Vue, and Angular frameworks?",
+      "category": "comparative",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "comp_010",
+      "query": "Compare public cloud versus private cloud infrastructure for enterprises",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "comp_011",
+      "query": "How do electric vehicles compare to hydrogen fuel cell vehicles?",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "comp_012",
+      "query": "Compare traditional education versus online learning effectiveness",
+      "category": "comparative",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "comp_013",
+      "query": "What are the differences between B2B and B2C marketing strategies?",
+      "category": "comparative",
+      "difficulty": "easy",
+      "expected_sources": 5,
+      "notes": ""
+    },
+    {
+      "id": "comp_014",
+      "query": "Compare the approaches of interpretable AI versus black-box models",
+      "category": "comparative",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "comp_015",
+      "query": "How do monolithic versus microservices architectures compare in complexity and scalability?",
+      "category": "comparative",
+      "difficulty": "medium",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "emrg_001",
+      "query": "What are the latest trends in generative AI for code development?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": "Requires 2025 information"
+    },
+    {
+      "id": "emrg_002",
+      "query": "How is edge computing transforming IoT applications?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "emrg_003",
+      "query": "What are the emerging applications of brain-computer interfaces?",
+      "category": "emerging",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "emrg_004",
+      "query": "How is synthetic biology being used to create new materials and medicines?",
+      "category": "emerging",
+      "difficulty": "hard",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "emrg_005",
+      "query": "What are the latest developments in autonomous vehicle technology?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "emrg_006",
+      "query": "How is Web3 technology changing digital ownership and identity?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "emrg_007",
+      "query": "What are the emerging trends in personalized medicine and genomics?",
+      "category": "emerging",
+      "difficulty": "hard",
+      "expected_sources": 10,
+      "notes": ""
+    },
+    {
+      "id": "emrg_008",
+      "query": "How is augmented reality being integrated into enterprise workflows?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "emrg_009",
+      "query": "What are the latest trends in sustainable fashion and circular economy?",
+      "category": "emerging",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "emrg_010",
+      "query": "How is AI being used to accelerate drug discovery processes?",
+      "category": "emerging",
+      "difficulty": "hard",
+      "expected_sources": 9,
+      "notes": ""
+    },
+    {
+      "id": "synth_001",
+      "query": "How can AI and biotechnology combine to address climate change challenges?",
+      "category": "synthesis",
+      "difficulty": "hard",
+      "expected_sources": 12,
+      "notes": ""
+    },
+    {
+      "id": "synth_002",
+      "query": "What are the ethical, technical, and societal implications of widespread AI adoption?",
+      "category": "synthesis",
+      "difficulty": "hard",
+      "expected_sources": 15,
+      "notes": ""
+    },
+    {
+      "id": "synth_003",
+      "query": "How do economic incentives, policy frameworks, and technology intersect in renewable energy adoption?",
+      "category": "synthesis",
+      "difficulty": "hard",
+      "expected_sources": 13,
+      "notes": ""
+    },
+    {
+      "id": "synth_004",
+      "query": "What are the interconnections between urbanization, public health, and environmental sustainability?",
+      "category": "synthesis",
+      "difficulty": "hard",
+      "expected_sources": 14,
+      "notes": ""
+    },
+    {
+      "id": "synth_005",
+      "query": "How do psychology, technology design, and business strategy combine in building habit-forming products?",
+      "category": "synthesis",
+      "difficulty": "hard",
+      "expected_sources": 11,
+      "notes": ""
+    },
+    {
+      "id": "val_001",
+      "query": "Is quantum computing currently capable of breaking RSA encryption?",
+      "category": "validation",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    },
+    {
+      "id": "val_002",
+      "query": "Do humans only use 10% of their brain capacity?",
+      "category": "validation",
+      "difficulty": "easy",
+      "expected_sources": 4,
+      "notes": "Common myth to debunk"
+    },
+    {
+      "id": "val_003",
+      "query": "Has artificial general intelligence (AGI) been achieved as of 2025?",
+      "category": "validation",
+      "difficulty": "easy",
+      "expected_sources": 6,
+      "notes": ""
+    },
+    {
+      "id": "val_004",
+      "query": "Are electric vehicles truly zero-emission when considering full lifecycle?",
+      "category": "validation",
+      "difficulty": "medium",
+      "expected_sources": 8,
+      "notes": ""
+    },
+    {
+      "id": "val_005",
+      "query": "Can blockchain technology eliminate all forms of financial fraud?",
+      "category": "validation",
+      "difficulty": "medium",
+      "expected_sources": 7,
+      "notes": ""
+    }
+  ]
+}
