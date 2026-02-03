@@ -1,0 +1,101 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+*.egg
+.eggs
+
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# IDE and editors
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
+.pytest_cache
+.coverage
+.coverage.*
+htmlcov
+.tox
+.nox
+.hypothesis
+
+# Linting and type checking
+.mypy_cache
+.ruff_cache
+.dmypy.json
+
+# Documentation
+docs/
+
+# Local development files
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.temp
+
+# Research outputs (Phase 1 POC)
+research/
+
+# Build artifacts
+build/
+dist/
+*.manifest
+*.spec
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints
+
+# Context and workflows (local development)
+context/
+workflows/
+
+# ML/Data artifacts
+*.csv
+*.h5
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.parquet
+models/
+data/
+
+# Claude Code
+.claude/
+
+# Secrets
+*.pem
+*.key
+credentials/
+secrets/
+
+# Pre-commit
+.pre-commit-config.yaml
+
+# Justfile (dev only)
+justfile
+
+# Test directory
+tests/

@@ -179,3 +179,42 @@ export-openapi:
     @echo "Generating OpenAPI YAML specification..."
     uv run python -m src.export_openapi
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# ----------------------------
+# Docker
+# ----------------------------
+
+# Build Docker image for production
+docker-build:
+    @echo "🏗️  Building Deep Research Service Docker image..."
+    DOCKER_BUILDKIT=1 docker build --target=runtime . -t wep-deep-research:latest
+    @echo "✅ Docker image built successfully!"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Run service with docker-compose
+docker-run:
+    @echo "🚀 Starting Deep Research Service with Gunicorn..."
+    @echo "🔗 Service will be available at: http://localhost:8080"
+    @echo "📖 API docs at: http://localhost:8080/docs"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    docker-compose up --remove-orphans
+
+# Stop running containers
+docker-stop:
+    @echo "🛑 Stopping Deep Research Service containers..."
+    docker-compose down --remove-orphans
+    @echo "✅ Containers stopped!"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# View container logs
+docker-logs:
+    @echo "📋 Viewing Deep Research Service logs..."
+    docker-compose logs -f deep-research
+
+# Remove Docker images and prune build cache
+docker-clean:
+    @echo "🧹 Cleaning Docker images and build cache..."
+    docker-compose down --rmi all --volumes --remove-orphans 2>/dev/null || true
+    docker image rm wep-deep-research:latest 2>/dev/null || true
+    @echo "✅ Docker cleanup complete!"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
