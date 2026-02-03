@@ -134,6 +134,43 @@ jobs:
       - name: Run tests
         run: just test-unit
 
+  docker-build:
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Inject uv cache into Docker build
+        uses: reproducible-containers/buildkit-cache-dance@v3.1.2
+        with:
+          cache-map: |
+            {
+              "/root/.cache/uv": "/tmp/.buildkit-cache/uv"
+            }
+          skip-extraction: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: runtime
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   merged-test:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
@@ -166,7 +203,7 @@ jobs:
         run: just test-unit
 
   release:
-    needs: [format, lint, type-check, test]
+    needs: [format, lint, type-check, test, docker-build]
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event.action == 'closed' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
