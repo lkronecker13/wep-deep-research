@@ -1,0 +1,26 @@
+services:
+  deep-research:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: wep-deep-research:local
+    container_name: deep-research-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Required API keys (inject at runtime)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Logging configuration
+      - LOGGING_LEVEL=${LOGGING_LEVEL:-INFO}
+      # Gunicorn tuning (optional)
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-300}
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8080/health/liveness')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped

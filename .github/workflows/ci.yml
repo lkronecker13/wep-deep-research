@@ -50,7 +50,6 @@ jobs:
         run: just format
 
   lint:
-    needs: format
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     steps:
@@ -134,6 +133,55 @@ jobs:
       - name: Run tests
         run: just test-unit
 
+  docker-build:
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: runtime
+          push: false
+          load: true
+          tags: wep-deep-research:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test Docker image
+        run: |
+          # Start container with required env vars
+          docker run --rm -d --name smoke-test \
+            -p 8000:8000 \
+            -e PORT=8000 \
+            -e ANTHROPIC_API_KEY=sk-ant-test \
+            -e GEMINI_API_KEY=test \
+            wep-deep-research:test
+
+          # Wait for container to start
+          echo "Waiting for container to start..."
+          sleep 10
+
+          # Check if container is still running
+          if ! docker ps | grep -q smoke-test; then
+            echo "ERROR: Container failed to start or crashed"
+            docker logs smoke-test 2>&1 || true
+            exit 1
+          fi
+
+          echo "✅ Container started successfully"
+
+          # Cleanup
+          docker stop smoke-test
+
   merged-test:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
@@ -166,7 +214,7 @@ jobs:
         run: just test-unit
 
   release:
-    needs: [format, lint, type-check, test]
+    needs: [format, lint, type-check, test, docker-build]
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event.action == 'closed' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
