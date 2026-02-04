@@ -1,16 +1,25 @@
 """FastAPI application for deep research service."""
 
+import asyncio
+from typing import AsyncIterator
+
 import structlog
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from src import __version__
+from src.events import CompleteEvent, ErrorEvent, SSEEvent
 from src.exceptions import ResearchPipelineError
 from src.models import ResearchResult
 from src.workflow import run_research_workflow
 
 log = structlog.get_logger("src.server")
+
+# SSE Configuration
+HEARTBEAT_INTERVAL = 30  # seconds
+MAX_DURATION = 600  # 10 minutes (GCP Cloud Run configured timeout)
+MAX_QUEUE_SIZE = 100  # Bounded queue to prevent memory leaks
 
 
 # --- Request/Response schemas ---
@@ -135,6 +144,11 @@ Built with PydanticAI, FastAPI, and DBOS for durable workflow execution.
     application.add_exception_handler(ValidationError, _handle_validation_error)  # type: ignore[arg-type]
     application.add_exception_handler(Exception, _handle_unexpected_error)
 
+    def _get_safe_error_message(exc: Exception) -> str:
+        """Get safe error message for streaming response."""
+        error_type = type(exc).__name__
+        return _SAFE_ERROR_MESSAGES.get(error_type, "An error occurred processing your request.")
+
     @application.post(
         "/research",
         response_model=ResearchResult,
@@ -227,6 +241,149 @@ Returns complete research results including:
     )
     async def research(body: ResearchRequest) -> ResearchResult:
         return await run_research_workflow(body.query)
+
+    @application.post(
+        "/research/stream",
+        response_class=StreamingResponse,
+        responses={
+            200: {
+                "description": "Server-Sent Events stream of research progress",
+                "content": {"text/event-stream": {"example": "event: phase_complete\ndata: {...}\n\n"}},
+            },
+            422: {"model": ErrorResponse},
+        },
+        summary="Execute research with streaming progress updates",
+        description="""
+Execute the 4-phase deep research workflow with real-time progress updates via SSE.
+
+**Event Types:**
+- `phase_start`: Phase beginning (planning, gathering, synthesis, verification)
+- `phase_complete`: Phase finished with duration and summary
+- `gathering_progress`: Individual search completion (N of M)
+- `heartbeat`: Keep-alive comment every 30s (`: keepalive`)
+- `complete`: Final result with full ResearchResult
+- `error`: Error occurred in specific phase
+
+**Connection:** Automatically closes after workflow completion or 10-minute timeout.
+**Reconnection:** Client should implement exponential backoff if connection drops.
+        """,
+        tags=["Research"],
+    )
+    async def research_stream(
+        request: Request,
+        research_request: ResearchRequest,
+    ) -> StreamingResponse:
+        """Execute research workflow with SSE progress streaming."""
+
+        async def event_generator() -> AsyncIterator[str]:
+            """Generate SSE events from workflow execution."""
+            # Bounded queue to prevent memory leaks
+            event_queue: asyncio.Queue[SSEEvent] = asyncio.Queue(maxsize=MAX_QUEUE_SIZE)
+            workflow_complete = asyncio.Event()
+            workflow_error: Exception | None = None
+
+            async def event_callback(event: SSEEvent) -> None:
+                """Callback for workflow to emit events (with backpressure)."""
+                try:
+                    await asyncio.wait_for(event_queue.put(event), timeout=5.0)
+                except asyncio.TimeoutError:
+                    log.warning("event_queue_full", event=event.event)
+                    # Queue full - drop event or apply backpressure strategy
+
+            async def run_workflow_task() -> None:
+                """Background task executing research workflow."""
+                nonlocal workflow_error
+                try:
+                    result = await run_research_workflow(
+                        query=research_request.query,
+                        event_callback=event_callback,
+                    )
+                    # Send completion event with full result
+                    await event_queue.put(CompleteEvent(data=result.model_dump()))
+                except Exception as e:
+                    log.error("workflow_error", error=str(e), exc_info=True)
+                    workflow_error = e
+                    await event_queue.put(
+                        ErrorEvent(
+                            data={
+                                "error": _get_safe_error_message(e),
+                                "error_type": e.__class__.__name__,
+                                "phase": "unknown",
+                            }
+                        )
+                    )
+                finally:
+                    workflow_complete.set()
+
+            # Start workflow in background
+            workflow_task = asyncio.create_task(run_workflow_task())
+
+            # Stream events with heartbeat management
+            start_time = asyncio.get_event_loop().time()
+            next_heartbeat = start_time + HEARTBEAT_INTERVAL
+
+            try:
+                while not workflow_complete.is_set():
+                    current_time = asyncio.get_event_loop().time()
+                    elapsed = current_time - start_time
+
+                    # Enforce maximum duration
+                    if elapsed > MAX_DURATION:
+                        log.warning("stream_timeout", elapsed=elapsed, max=MAX_DURATION)
+                        workflow_task.cancel()  # Cancel long-running workflow
+                        yield ErrorEvent(
+                            data={
+                                "error": "Research timeout - workflow exceeded 10 minutes",
+                                "error_type": "TimeoutError",
+                                "phase": "timeout",
+                            }
+                        ).format()
+                        break
+
+                    # Check for client disconnect EVERY iteration
+                    if await request.is_disconnected():
+                        log.info("client_disconnected", elapsed=elapsed)
+                        workflow_task.cancel()  # Cancel background workflow
+                        break
+
+                    # Send heartbeat if needed (no drift accumulation)
+                    if current_time >= next_heartbeat:
+                        yield ": keepalive\n\n"  # SSE comment format
+                        next_heartbeat += HEARTBEAT_INTERVAL  # No drift
+
+                    # Wait for next event with timeout (short for responsive disconnect detection)
+                    try:
+                        event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
+                        yield event.format()
+                    except asyncio.TimeoutError:
+                        continue  # No event available, loop to check heartbeat/disconnect
+
+                # Drain remaining events in queue
+                while not event_queue.empty():
+                    event = event_queue.get_nowait()
+                    yield event.format()
+
+            finally:
+                # Ensure background task is cancelled (always cancel, idempotent if done)
+                workflow_task.cancel()
+                try:
+                    await asyncio.wait_for(workflow_task, timeout=10.0)
+                except asyncio.CancelledError:
+                    log.info("workflow_cancelled")
+                except asyncio.TimeoutError:
+                    log.error("workflow_cancellation_timeout")
+                except Exception as e:
+                    log.exception("workflow_failed_during_cleanup", error=str(e))
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",  # Disable proxy buffering
+                "Connection": "keep-alive",
+            },
+        )
 
     @application.get(
         "/health",
