@@ -69,12 +69,22 @@ paths:
 
         - Timing metrics for each phase'
       operationId: research_research_post
+      parameters:
+      - name: demo
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Enable demo mode with hardcoded response for frontend testing
+          default: false
+          title: Demo
+        description: Enable demo mode with hardcoded response for frontend testing
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ResearchRequest'
-        required: true
       responses:
         '200':
           description: Research completed successfully
@@ -87,8 +97,6 @@ paths:
             verification failed)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               examples:
                 planning_error:
                   summary: Planning Error
@@ -111,15 +119,80 @@ paths:
                   value:
                     error: VerificationError
                     detail: Unable to verify research quality. Please try again.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
               example:
                 error: InternalServerError
                 detail: An unexpected error occurred.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /research/stream:
+    post:
+      tags:
+      - Research
+      summary: Execute research with streaming progress updates
+      description: 'Execute the 4-phase deep research workflow with real-time progress
+        updates via SSE.
+
+
+        **Event Types:**
+
+        - `phase_start`: Phase beginning (planning, gathering, synthesis, verification)
+
+        - `phase_complete`: Phase finished with duration and summary
+
+        - `gathering_progress`: Individual search completion (N of M)
+
+        - `heartbeat`: Keep-alive comment every 30s (`: keepalive`)
+
+        - `complete`: Final result with full ResearchResult
+
+        - `error`: Error occurred in specific phase
+
+
+        **Connection:** Automatically closes after workflow completion or 10-minute
+        timeout.
+
+        **Reconnection:** Client should implement exponential backoff if connection
+        drops.'
+      operationId: research_stream_research_stream_post
+      parameters:
+      - name: demo
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Enable demo mode with hardcoded SSE events for frontend testing
+          default: false
+          title: Demo
+        description: Enable demo mode with hardcoded SSE events for frontend testing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchRequest'
+      responses:
+        '200':
+          description: Server-Sent Events stream of research progress
+          content:
+            text/event-stream:
+              example: 'event: phase_complete
+
+                data: {...}
+
+
+                '
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
   /health:
     get:
       tags:
