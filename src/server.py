@@ -251,7 +251,7 @@ Returns complete research results including:
                     detail="Demo mode not available in this environment",
                 )
             log.warning("demo_mode_active", query=body.query, endpoint="/research")
-            return get_demo_research_result(body.query)
+            return get_demo_research_result().model_copy(update={"query": body.query})
 
         return await run_research_workflow(body.query)
 

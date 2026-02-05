@@ -1,8 +1,8 @@
 """Demo mode fixtures for API testing without burning API keys."""
 
 import os
+from collections.abc import AsyncGenerator
 from functools import lru_cache
-from typing import AsyncIterator
 
 from src.events import CompleteEvent, PhaseCompleteEvent, PhaseStartEvent
 from src.models import (
@@ -30,20 +30,18 @@ def is_demo_mode_allowed() -> bool:
 
 
 @lru_cache(maxsize=1)
-def get_demo_research_result(query: str) -> ResearchResult:
+def get_demo_research_result() -> ResearchResult:
     """Generate cached demo research result for testing.
 
-    Returns hardcoded quantum computing research for any query.
+    Returns hardcoded quantum computing research with placeholder query.
     Cached to avoid repeated Pydantic object construction.
-
-    Args:
-        query: User's research question (included in result)
+    Callers should use .model_copy(update={"query": actual_query}) to override.
 
     Returns:
         Complete ResearchResult with realistic mock data
     """
     return ResearchResult(
-        query=query,
+        query="What are the latest developments in quantum computing?",
         plan=ResearchPlan(
             executive_summary="Research quantum computing by exploring recent breakthroughs, practical applications, and current limitations",
             web_search_steps=[
@@ -133,7 +131,7 @@ def get_demo_research_result(query: str) -> ResearchResult:
     )
 
 
-async def generate_demo_sse_stream(query: str) -> AsyncIterator[str]:
+async def generate_demo_sse_stream(query: str) -> AsyncGenerator[str, None]:
     """Generate demo SSE event stream with all 4 phases.
 
     Yields events instantly for rapid testing. Add small delays
@@ -198,5 +196,5 @@ async def generate_demo_sse_stream(query: str) -> AsyncIterator[str]:
     ).format()
 
     # Final complete event with full result
-    result = get_demo_research_result(query)
+    result = get_demo_research_result().model_copy(update={"query": query})
     yield CompleteEvent(data=result.model_dump()).format()
