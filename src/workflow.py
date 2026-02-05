@@ -2,7 +2,7 @@
 
 import asyncio
 from time import perf_counter
-from typing import Any
+from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
 from pydantic_ai import Agent
@@ -12,6 +12,14 @@ from src.agents import (
     get_plan_agent,
     get_synthesis_agent,
     get_verification_agent,
+)
+from src.events import (
+    CompleteEvent,
+    ErrorEvent,
+    PhaseCompleteEvent,
+    PhaseStartEvent,
+    PhaseWarningEvent,
+    SSEEvent,
 )
 from src.exceptions import (
     GatheringError,
@@ -39,8 +47,9 @@ async def run_research_workflow(
     gathering_agent: Agent[Any, SearchResult] | None = None,
     synthesis_agent: Agent[Any, ResearchReport] | None = None,
     verification_agent: Agent[Any, ValidationResult] | None = None,
+    event_callback: Callable[[SSEEvent], Awaitable[None]] | None = None,
 ) -> ResearchResult:
-    """Execute 4-phase deep research workflow.
+    """Execute 4-phase deep research workflow with optional event streaming.
 
     Args:
         query: Research question to investigate.
@@ -48,6 +57,7 @@ async def run_research_workflow(
         gathering_agent: Override default gathering agent (for testing).
         synthesis_agent: Override default synthesis agent (for testing).
         verification_agent: Override default verification agent (for testing).
+        event_callback: Optional callback for streaming progress events.
 
     Returns:
         ResearchResult with all phases' outputs and timing metrics.
@@ -68,89 +78,195 @@ async def run_research_workflow(
     _verification_agent = verification_agent or get_verification_agent()
 
     workflow_start = perf_counter()
+    current_phase = "initialization"
     log.info("workflow.started", query=query)
 
-    # Phase 1: Planning
-    phase_start = perf_counter()
     try:
-        plan_result = await _plan_agent.run(query)
-        plan = plan_result.output
-    except Exception as e:
-        log.error("workflow.planning.failed", error=str(e))
-        raise PlanningError(topic=query, reason=str(e)) from e
-    planning_ms = int((perf_counter() - phase_start) * 1000)
-    log.info("workflow.planning.completed", duration_ms=planning_ms, step_count=len(plan.web_search_steps))
+        # Phase 1: Planning
+        current_phase = "planning"
+        if event_callback:
+            await event_callback(PhaseStartEvent(data={"phase": "planning"}))
 
-    # Phase 2: Gathering (parallel, tolerates partial failures)
-    phase_start = perf_counter()
-    results: list[SearchResult] = []
-    errors: list[Exception] = []
-
-    async def _gather_one(search_terms: str) -> None:
+        phase_start = perf_counter()
         try:
-            result = await _gathering_agent.run(search_terms)
-            results.append(result.output)
+            plan_result = await _plan_agent.run(query)
+            plan = plan_result.output
         except Exception as e:
-            log.warning("workflow.gathering.search_failed", search_terms=search_terms, error=str(e))
-            errors.append(e)
+            log.error("workflow.planning.failed", error=str(e))
+            raise PlanningError(topic=query, reason=str(e)) from e
+        planning_ms = int((perf_counter() - phase_start) * 1000)
+        log.info("workflow.planning.completed", duration_ms=planning_ms, step_count=len(plan.web_search_steps))
 
-    async with asyncio.TaskGroup() as tg:
-        for step in plan.web_search_steps:
-            tg.create_task(_gather_one(step.search_terms))
+        if event_callback:
+            await event_callback(
+                PhaseCompleteEvent(
+                    data={
+                        "phase": "planning",
+                        "duration_ms": planning_ms,
+                        "output_summary": {
+                            "executive_summary": plan.executive_summary[:100],
+                            "search_steps": len(plan.web_search_steps),
+                        },
+                    }
+                )
+            )
 
-    if not results:
-        raise GatheringError(attempted=len(plan.web_search_steps), failed=len(errors))
+        # Phase 2: Gathering (parallel, tolerates partial failures)
+        current_phase = "gathering"
+        if event_callback:
+            await event_callback(PhaseStartEvent(data={"phase": "gathering"}))
 
-    gathering_ms = int((perf_counter() - phase_start) * 1000)
-    log.info("workflow.gathering.completed", duration_ms=gathering_ms, succeeded=len(results), failed=len(errors))
+        phase_start = perf_counter()
+        results: list[SearchResult] = []
+        errors: list[Exception] = []
 
-    # Phase 3: Synthesis
-    phase_start = perf_counter()
-    search_results_json = "[" + ", ".join(r.model_dump_json() for r in results) + "]"
-    synthesis_prompt = (
-        f"Original query: {query}\n"
-        f"Research plan: {plan.model_dump_json()}\n"
-        f"Search results: {search_results_json}\n\n"
-        "Create a comprehensive research report based on these materials."
-    )
-    try:
-        report_result = await _synthesis_agent.run(synthesis_prompt)
-        report = report_result.output
-    except Exception as e:
-        log.error("workflow.synthesis.failed", error=str(e))
-        raise SynthesisError(reason=str(e)) from e
-    synthesis_ms = int((perf_counter() - phase_start) * 1000)
-    log.info("workflow.synthesis.completed", duration_ms=synthesis_ms, title=report.title)
+        async def _gather_one(search_terms: str) -> None:
+            try:
+                result = await _gathering_agent.run(search_terms)
+                results.append(result.output)
+            except Exception as e:
+                log.warning("workflow.gathering.search_failed", search_terms=search_terms, error=str(e))
+                errors.append(e)
 
-    # Phase 4: Verification
-    phase_start = perf_counter()
-    validation_prompt = (
-        f"Validate this research report:\n{report.model_dump_json()}\n\n"
-        "Check for quality, consistency, and reliability."
-    )
-    try:
-        validation_result = await _verification_agent.run(validation_prompt)
-        validation = validation_result.output
-    except Exception as e:
-        log.error("workflow.verification.failed", error=str(e))
-        raise VerificationError(reason=str(e)) from e
-    verification_ms = int((perf_counter() - phase_start) * 1000)
-    log.info("workflow.verification.completed", duration_ms=verification_ms, is_valid=validation.is_valid)
+        async with asyncio.TaskGroup() as tg:
+            for step in plan.web_search_steps:
+                tg.create_task(_gather_one(step.search_terms))
 
-    total_ms = int((perf_counter() - workflow_start) * 1000)
-    log.info("workflow.completed", total_ms=total_ms)
+        if not results:
+            raise GatheringError(attempted=len(plan.web_search_steps), failed=len(errors))
 
-    return ResearchResult(
-        query=query,
-        plan=plan,
-        search_results=results,
-        report=report,
-        validation=validation,
-        timings=PhaseTimings(
-            planning_ms=planning_ms,
-            gathering_ms=gathering_ms,
-            synthesis_ms=synthesis_ms,
-            verification_ms=verification_ms,
-            total_ms=total_ms,
-        ),
-    )
+        gathering_ms = int((perf_counter() - phase_start) * 1000)
+        log.info("workflow.gathering.completed", duration_ms=gathering_ms, succeeded=len(results), failed=len(errors))
+
+        if event_callback:
+            # Emit warning if some searches failed
+            if errors:
+                await event_callback(
+                    PhaseWarningEvent(
+                        data={
+                            "phase": "gathering",
+                            "warning": f"{len(errors)} of {len(plan.web_search_steps)} searches failed, continuing with partial results",
+                        }
+                    )
+                )
+
+            await event_callback(
+                PhaseCompleteEvent(
+                    data={
+                        "phase": "gathering",
+                        "duration_ms": gathering_ms,
+                        "output_summary": {
+                            "searches_completed": len(results),
+                            "searches_requested": len(plan.web_search_steps),
+                            "total_sources": sum(len(r.sources) for r in results),
+                        },
+                    }
+                )
+            )
+
+        # Phase 3: Synthesis
+        current_phase = "synthesis"
+        if event_callback:
+            await event_callback(PhaseStartEvent(data={"phase": "synthesis"}))
+
+        phase_start = perf_counter()
+        search_results_json = "[" + ", ".join(r.model_dump_json() for r in results) + "]"
+        synthesis_prompt = (
+            f"Original query: {query}\n"
+            f"Research plan: {plan.model_dump_json()}\n"
+            f"Search results: {search_results_json}\n\n"
+            "Create a comprehensive research report based on these materials."
+        )
+        try:
+            report_result = await _synthesis_agent.run(synthesis_prompt)
+            report = report_result.output
+        except Exception as e:
+            log.error("workflow.synthesis.failed", error=str(e))
+            raise SynthesisError(reason=str(e)) from e
+        synthesis_ms = int((perf_counter() - phase_start) * 1000)
+        log.info("workflow.synthesis.completed", duration_ms=synthesis_ms, title=report.title)
+
+        if event_callback:
+            await event_callback(
+                PhaseCompleteEvent(
+                    data={
+                        "phase": "synthesis",
+                        "duration_ms": synthesis_ms,
+                        "output_summary": {
+                            "title": report.title,
+                            "key_findings_count": len(report.key_findings),
+                        },
+                    }
+                )
+            )
+
+        # Phase 4: Verification
+        current_phase = "verification"
+        if event_callback:
+            await event_callback(PhaseStartEvent(data={"phase": "verification"}))
+
+        phase_start = perf_counter()
+        validation_prompt = (
+            f"Validate this research report:\n{report.model_dump_json()}\n\n"
+            "Check for quality, consistency, and reliability."
+        )
+        try:
+            validation_result = await _verification_agent.run(validation_prompt)
+            validation = validation_result.output
+        except Exception as e:
+            log.error("workflow.verification.failed", error=str(e))
+            raise VerificationError(reason=str(e)) from e
+        verification_ms = int((perf_counter() - phase_start) * 1000)
+        log.info("workflow.verification.completed", duration_ms=verification_ms, is_valid=validation.is_valid)
+
+        if event_callback:
+            await event_callback(
+                PhaseCompleteEvent(
+                    data={
+                        "phase": "verification",
+                        "duration_ms": verification_ms,
+                        "output_summary": {
+                            "is_valid": validation.is_valid,
+                            "confidence_score": validation.confidence_score,
+                            "issues_count": len(validation.issues_found),
+                        },
+                    }
+                )
+            )
+
+        total_ms = int((perf_counter() - workflow_start) * 1000)
+        log.info("workflow.completed", total_ms=total_ms)
+
+        result = ResearchResult(
+            query=query,
+            plan=plan,
+            search_results=results,
+            report=report,
+            validation=validation,
+            timings=PhaseTimings(
+                planning_ms=planning_ms,
+                gathering_ms=gathering_ms,
+                synthesis_ms=synthesis_ms,
+                verification_ms=verification_ms,
+                total_ms=total_ms,
+            ),
+        )
+
+        if event_callback:
+            await event_callback(CompleteEvent(data=result.model_dump()))
+
+        return result
+
+    except asyncio.CancelledError:
+        log.info("workflow.cancelled", query=query, phase=current_phase)
+        if event_callback:
+            await event_callback(
+                ErrorEvent(
+                    data={
+                        "error": "Research cancelled",
+                        "phase": current_phase,
+                        "error_type": "CancelledError",
+                    }
+                )
+            )
+        raise  # Re-raise to propagate cancellation

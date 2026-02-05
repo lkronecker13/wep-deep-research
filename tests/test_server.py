@@ -137,6 +137,43 @@ class TestResearchEndpoint:
                 data = response.json()
                 assert data["error"] == "InternalServerError"
 
+    @pytest.mark.asyncio
+    async def test__demo_mode_enabled__returns_instant_response(self, app: FastAPI) -> None:
+        """Test that demo=true returns hardcoded response without calling workflow."""
+        # No mock needed - demo mode bypasses run_research_workflow entirely
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/research?demo=true", json={"query": "Custom query"})
+            assert response.status_code == 200
+            data = response.json()
+            # Verify user's query is preserved
+            assert data["query"] == "Custom query"
+            # Verify demo data structure
+            assert data["report"]["title"] == "Recent Advances in Quantum Computing: 2024 Analysis"
+            assert data["timings"]["total_ms"] == 500
+            assert data["validation"]["is_valid"] is True
+            assert data["validation"]["confidence_score"] == 0.85
+
+    @pytest.mark.asyncio
+    async def test__demo_mode_disabled__calls_real_workflow(self, app: FastAPI) -> None:
+        """Test that demo=false (or omitted) calls the real workflow."""
+        with patch("src.server.run_research_workflow", new=AsyncMock(return_value=_make_research_result("real query"))):
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.post("/research?demo=false", json={"query": "real query"})
+                assert response.status_code == 200
+                data = response.json()
+                assert data["query"] == "real query"
+
+    @pytest.mark.asyncio
+    async def test__demo_mode_in_production__raises_403(self, app: FastAPI, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Demo mode disabled in production environment."""
+        monkeypatch.setenv("ENVIRONMENT", "production")
+
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/research?demo=true", json={"query": "test"})
+            assert response.status_code == 403
+            data = response.json()
+            assert "not available" in data["detail"]
+
 
 class TestHealthEndpoints:
     """Tests for health check endpoints."""
