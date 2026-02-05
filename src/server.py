@@ -4,11 +4,12 @@ import asyncio
 from typing import AsyncIterator
 
 import structlog
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from src import __version__
+from src.demo import generate_demo_sse_stream, get_demo_research_result, is_demo_mode_allowed
 from src.events import CompleteEvent, ErrorEvent, SSEEvent
 from src.exceptions import ResearchPipelineError
 from src.models import ResearchResult
@@ -239,7 +240,19 @@ Returns complete research results including:
             },
         },
     )
-    async def research(body: ResearchRequest) -> ResearchResult:
+    async def research(
+        body: ResearchRequest,
+        demo: bool = Query(default=False, description="Enable demo mode with hardcoded response for frontend testing"),
+    ) -> ResearchResult:
+        if demo:
+            if not is_demo_mode_allowed():
+                raise HTTPException(
+                    status_code=403,
+                    detail="Demo mode not available in this environment",
+                )
+            log.warning("demo_mode_active", query=body.query, endpoint="/research")
+            return get_demo_research_result(body.query)
+
         return await run_research_workflow(body.query)
 
     @application.post(
@@ -272,8 +285,29 @@ Execute the 4-phase deep research workflow with real-time progress updates via S
     async def research_stream(
         request: Request,
         research_request: ResearchRequest,
+        demo: bool = Query(
+            default=False, description="Enable demo mode with hardcoded SSE events for frontend testing"
+        ),
     ) -> StreamingResponse:
         """Execute research workflow with SSE progress streaming."""
+
+        if demo:
+            if not is_demo_mode_allowed():
+                raise HTTPException(
+                    status_code=403,
+                    detail="Demo mode not available in this environment",
+                )
+            log.warning("demo_mode_active", query=research_request.query, endpoint="/research/stream")
+
+            return StreamingResponse(
+                generate_demo_sse_stream(research_request.query),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                    "Connection": "keep-alive",
+                },
+            )
 
         async def event_generator() -> AsyncIterator[str]:
             """Generate SSE events from workflow execution."""

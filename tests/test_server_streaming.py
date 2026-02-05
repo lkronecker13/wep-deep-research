@@ -426,3 +426,69 @@ class TestResearchStreamEndpoint:
                     assert "report" in complete_data
                     assert "validation" in complete_data
                     assert "timings" in complete_data
+
+    @pytest.mark.asyncio
+    async def test__research_stream_demo_mode__returns_instant_events(self, app: FastAPI) -> None:
+        """Test that demo=true returns instant SSE events without calling workflow."""
+        # No mock needed - demo mode bypasses run_research_workflow
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            async with client.stream(
+                "POST",
+                "/research/stream?demo=true",
+                json={"query": "Demo query"},
+            ) as response:
+                events = await _collect_events(response)
+
+                # Verify all 4 phases present
+                event_types = [e[0] for e in events]
+                assert event_types.count("phase_start") == 4
+                assert event_types.count("phase_complete") == 4
+                assert event_types.count("complete") == 1
+
+                # Verify phases in order
+                phase_starts = [e[1]["phase"] for e in events if e[0] == "phase_start"]
+                assert phase_starts == ["planning", "gathering", "synthesis", "verification"]
+
+                # Verify complete event has user's query
+                complete_events = [e for e in events if e[0] == "complete"]
+                assert len(complete_events) == 1
+                assert complete_events[0][1]["query"] == "Demo query"
+
+                # Verify demo timings
+                complete_data = complete_events[0][1]
+                assert complete_data["timings"]["total_ms"] == 500
+                assert complete_data["report"]["title"] == "Recent Advances in Quantum Computing: 2024 Analysis"
+
+    @pytest.mark.asyncio
+    async def test__research_stream_demo_disabled__calls_real_workflow(self, app: FastAPI) -> None:
+        """Test that demo=false calls the real workflow."""
+        result = _make_research_result("real stream query")
+
+        with patch("src.server.run_research_workflow", new=AsyncMock(return_value=result)):
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                async with client.stream(
+                    "POST",
+                    "/research/stream?demo=false",
+                    json={"query": "real stream query"},
+                ) as response:
+                    events = await _collect_events(response)
+
+                    # Should get complete event with real result
+                    complete_events = [e for e in events if e[0] == "complete"]
+                    assert len(complete_events) == 1
+                    assert complete_events[0][1]["query"] == "real stream query"
+
+    @pytest.mark.asyncio
+    async def test__research_stream_demo_in_production__raises_403(
+        self, app: FastAPI, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Demo mode disabled in production environment for streaming."""
+        monkeypatch.setenv("ENVIRONMENT", "production")
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"
+        ) as client:
+            response = await client.post("/research/stream?demo=true", json={"query": "test"})
+            assert response.status_code == 403
+            data = response.json()
+            assert "not available" in data["detail"]
