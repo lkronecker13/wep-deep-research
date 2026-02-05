@@ -4,7 +4,7 @@
 
 An intelligent research system that conducts structured, comprehensive research using specialized AI agents. Built with [PydanticAI](https://ai.pydantic.dev/) for [Wepoint](https://www.wepoint.com/) as an internal research tool.
 
-**Current Status:** Phase 1 POC ✅ (Functional prototype)
+**Current Status:** Phase 2.5 Complete ✅ (Production API with SSE streaming + Demo mode)
 
 ## What It Does
 
@@ -66,7 +66,36 @@ curl -X POST http://localhost:8000/research \
 
 **Response:** Full `ResearchResult` JSON with plan, search results, report, validation, and timings (30-180s)
 
-### Option 2: CLI (POC Reference)
+### Option 2: SSE Streaming (Real-time Progress)
+
+```bash
+# Stream real-time progress updates
+curl -N -X POST http://localhost:8000/research/stream \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is quantum computing?"}'
+
+# Output: Server-Sent Events with phase_start, phase_complete, complete events
+```
+
+**Response:** SSE stream with real-time updates (planning → gathering → synthesis → verification → complete)
+
+### Option 3: Demo Mode (Frontend Testing)
+
+```bash
+# Test with instant hardcoded responses (no API costs)
+curl -X POST "http://localhost:8000/research?demo=true" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test query"}'
+
+# Or with streaming
+curl -N -X POST "http://localhost:8000/research/stream?demo=true" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test query"}'
+```
+
+**Response:** Instant quantum computing research example (no API keys required)
+
+### Option 4: CLI (POC Reference)
 
 ```bash
 # Run research via CLI
@@ -80,7 +109,8 @@ cat research/outputs/research_*.json | jq '.report.key_findings'
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/research` | POST | Execute research workflow (30-180s) |
+| `/research` | POST | Execute research workflow (30-180s), supports `?demo=true` |
+| `/research/stream` | POST | SSE streaming with real-time progress updates, supports `?demo=true` |
 | `/health` | GET | Service health check |
 | `/health/liveness` | GET | Kubernetes liveness probe |
 | `/health/readiness` | GET | Kubernetes readiness probe |
@@ -91,6 +121,8 @@ cat research/outputs/research_*.json | jq '.report.key_findings'
 ```
 
 **Response:** `ResearchResult` with plan, search_results, report, validation, timings
+
+**Demo Mode:** Add `?demo=true` to either endpoint for instant hardcoded responses (frontend testing without API costs)
 
 ---
 
@@ -339,9 +371,10 @@ Example: `test__plan_agent__creates_valid_research_plan`
 - ✅ Production 4-phase workflow (`src/workflow.py`)
 - ✅ Structured error handling with sanitized client messages
 - ✅ Health check endpoints (`/health`, `/health/liveness`, `/health/readiness`)
-- ✅ Comprehensive test suite (115 tests, 95% coverage)
+- ✅ Comprehensive test suite (161 tests, 86% coverage)
 - ✅ Type-safe models (PhaseTimings, ResearchResult)
 - ✅ Production logging with correlation IDs
+- ✅ OpenAPI specification with complete API documentation
 
 **Deferred to Phase 3:**
 - DBOS durability (add if needed for long workflows)
@@ -361,23 +394,48 @@ curl -X POST http://localhost:8000/research \
 # Returns ResearchResult JSON (30-180s)
 ```
 
-### 🚧 Phase 2.5: SSE Streaming (Planned - 1 week)
+### ✅ Phase 2.5: SSE Streaming + Demo Mode (Complete)
 
-**Goal:** Real-time progress updates via Server-Sent Events
+**Status:** Production-ready with real-time progress updates
+**Completed:**
+- ✅ `POST /research/stream` - SSE streaming with real-time progress events
+- ✅ 7 event types (phase_start, phase_complete, gathering_progress, heartbeat, complete, error, phase_warning)
+- ✅ Pattern C cleanup (guarantees background task cancellation on disconnect)
+- ✅ GCP Cloud Run optimized (600s timeout, 30s heartbeats, proxy buffering prevention)
+- ✅ Comprehensive SSE testing (13 streaming tests, client disconnect scenarios, memory leak prevention)
+- ✅ Demo mode with `?demo=true` parameter on both endpoints
+- ✅ Environment-gated demo mode (development/staging only, blocked in production)
+- ✅ LRU caching for instant demo responses
+- ✅ Comprehensive test coverage (161 tests, 86% coverage)
+- ✅ Docker containerization with production-ready configuration
 
-**Key additions:**
-- `POST /research/stream` - Stream phase-level progress events
-- 7 event types (phase_start, phase_complete, gathering_progress, heartbeat, complete, error, phase_warning)
-- Pattern C cleanup (guarantees background task cancellation on disconnect)
-- GCP Cloud Run optimized (600s timeout, 30s heartbeats, proxy buffering prevention)
-- Comprehensive SSE testing (client disconnect scenarios)
+**Demo Mode:**
+- Returns hardcoded quantum computing research example instantly
+- Supports both `/research` and `/research/stream` endpoints
+- Zero API costs for frontend integration testing
+- Production safety: 403 response if attempted in production environment
+
+**API Usage:**
+```bash
+# Real-time streaming
+curl -N -X POST http://localhost:8000/research/stream \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is quantum computing?"}'
+
+# Demo mode (instant, no API costs)
+curl -X POST "http://localhost:8000/research?demo=true" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test query"}'
+```
+
+**Benefits:**
+- Users see real-time progress during 30-180s workflows
+- Frontend teams can iterate without burning API keys ($0.30-0.50 per query)
+- Docker deployment ready for GCP Cloud Run
 
 **Documentation:**
-- `SSE_STREAMING_PLAN.md` - Complete implementation plan
+- `docs/openapi.yaml` - Complete API specification with streaming and demo mode
 - `docs/research/gcp-cloud-run-sse-limits.md` - GCP deployment guide
-- `SKILL_UPDATE_2026-01-28_sse-streaming.md` - Best practices
-
-**Benefits:** Users see real-time progress during 30-180s workflows
 
 ### 📋 Phase 3: Production Deployment (Future - 2-3 weeks)
 
@@ -493,13 +551,17 @@ Apache License 2.0 - See [LICENSE](LICENSE) file.
 
 ## Status
 
-**Current Phase:** Phase 2 Complete ✅ | Phase 2.5 Planned 🚧
-**Production Ready:** Phase 3 📋
+**Current Phase:** Phase 2.5 Complete ✅
+**Production Ready:** Docker containerization complete, GCP deployment pending
 
 ### What's Deployed
 - ✅ **Phase 1:** POC CLI (`research/`) - Functional prototype
-- ✅ **Phase 2:** Production API (`src/`) - FastAPI service with 95% test coverage
-- 🚧 **Phase 2.5:** SSE Streaming - Implementation plan ready
-- 📋 **Phase 3:** GCP Deployment - Future work
+- ✅ **Phase 2:** Production API (`src/`) - FastAPI service with comprehensive testing
+- ✅ **Phase 2.5:** SSE Streaming + Demo Mode - Real-time progress updates with frontend testing support
+  - 161 tests passing (86% coverage)
+  - `/research` and `/research/stream` endpoints with `?demo=true` support
+  - Docker containerization with production-ready configuration
+  - Environment-gated security controls
+- 📋 **Phase 3:** GCP Cloud Run Deployment - Ready for deployment
 
-*Last updated: 2026-01-28*
+*Last updated: 2026-02-05*
