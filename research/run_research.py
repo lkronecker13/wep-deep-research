@@ -9,6 +9,8 @@ from time import perf_counter
 from uuid import uuid4
 
 from dotenv import load_dotenv
+from opentelemetry import trace
+from pydantic_ai._agent_graph import CallToolsNode, End
 
 from research.agents import (
     get_gathering_agent,
@@ -24,6 +26,79 @@ load_dotenv()
 # Initialize structured logger (human-readable for POC)
 configure_structlog(testing=True)
 log = get_logger("research.workflow")
+
+# Initialize OpenTelemetry tracer for span hierarchy
+tracer = trace.get_tracer("research.workflow")
+
+
+async def run_agent_with_tracing(agent, prompt: str, agent_name: str):
+    """Run an agent using iter() pattern with tool call tracing.
+
+    Creates spans for each tool call detected during agent execution.
+
+    Args:
+        agent: The PydanticAI agent to run.
+        prompt: The prompt to send to the agent.
+        agent_name: Name for the span (e.g., 'plan_agent').
+
+    Returns:
+        The agent's output result.
+    """
+    with tracer.start_as_current_span(f"{agent_name}_execution") as agent_span:
+        agent_span.set_attribute("agent.name", agent_name)
+        agent_span.set_attribute("agent.prompt_length", len(prompt))
+
+        try:
+            async with agent.iter(prompt) as agent_run:
+                async for node in agent_run:
+                    if isinstance(node, CallToolsNode):
+                        # Create span for tool calls
+                        response = node.model_response
+                        for part in response.parts:
+                            if hasattr(part, "tool_name"):
+                                with tracer.start_as_current_span(f"tool_call:{part.tool_name}") as tool_span:
+                                    tool_span.set_attribute("tool.name", part.tool_name)
+                                    if hasattr(part, "args"):
+                                        tool_span.set_attribute("tool.args", str(part.args)[:1000])
+                    elif isinstance(node, End):
+                        # Final result
+                        agent_span.set_attribute("agent.completed", True)
+
+            result = agent_run.result
+            agent_span.set_attribute("agent.success", result is not None)
+
+            # Extract and set token usage with OpenInference-compatible attribute names
+            # This ensures Phoenix UI displays tokens/cost correctly
+            if result is not None:
+                try:
+                    usage = result.usage()
+                    input_tokens = usage.request_tokens or 0
+                    output_tokens = usage.response_tokens or 0
+                    agent_span.set_attribute("llm.token_count.prompt", input_tokens)
+                    agent_span.set_attribute("llm.token_count.completion", output_tokens)
+                    agent_span.set_attribute("llm.token_count.total", usage.total_tokens or 0)
+
+                    # Try to extract cost from model response details if available
+                    # PydanticAI may expose cost info in the raw response
+                    for msg in result.all_messages():
+                        if hasattr(msg, "model_response") and msg.model_response:
+                            resp = msg.model_response
+                            # Check for cost in various possible locations
+                            if hasattr(resp, "cost"):
+                                agent_span.set_attribute("llm.cost", resp.cost)
+                                break
+                            if hasattr(resp, "usage") and hasattr(resp.usage, "cost"):
+                                agent_span.set_attribute("llm.cost", resp.usage.cost)
+                                break
+                except Exception:
+                    pass  # Usage extraction failed, continue without token metrics
+
+            return result.output
+        except Exception as e:
+            agent_span.set_attribute("agent.error", str(e))
+            agent_span.set_attribute("agent.success", False)
+            log.error(f"{agent_name} failed with error: {type(e).__name__}: {e}")
+            raise
 
 
 async def run_research(query: str) -> dict[str, object]:
@@ -63,8 +138,7 @@ async def run_research(query: str) -> dict[str, object]:
         print("Phase 1: Creating research plan...")
 
         try:
-            plan_result = await plan_agent.run(query)
-            plan = plan_result.output
+            plan = await run_agent_with_tracing(plan_agent, query, "plan_agent")
             duration_ms = int((perf_counter() - phase_start) * 1000)
 
             log.info(
@@ -91,9 +165,16 @@ async def run_research(query: str) -> dict[str, object]:
         print("Phase 2: Gathering information...")
 
         try:
-            async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(gathering_agent.run(step.search_terms)) for step in plan.web_search_steps]
-            results = [task.result().output for task in tasks]
+            with tracer.start_as_current_span("gathering_phase") as gathering_span:
+                gathering_span.set_attribute("search_count", len(plan.web_search_steps))
+                async with asyncio.TaskGroup() as tg:
+                    tasks = [
+                        tg.create_task(
+                            run_agent_with_tracing(gathering_agent, step.search_terms, f"gathering_agent_{i}")
+                        )
+                        for i, step in enumerate(plan.web_search_steps)
+                    ]
+                results = [task.result() for task in tasks]
             duration_ms = int((perf_counter() - phase_start) * 1000)
 
             # Log metrics for each search
@@ -132,8 +213,7 @@ async def run_research(query: str) -> dict[str, object]:
 
             Create a comprehensive research report based on these materials.
             """
-            report_result = await synthesis_agent.run(synthesis_prompt)
-            report = report_result.output
+            report = await run_agent_with_tracing(synthesis_agent, synthesis_prompt, "synthesis_agent")
             duration_ms = int((perf_counter() - phase_start) * 1000)
 
             log.info(
@@ -165,8 +245,7 @@ async def run_research(query: str) -> dict[str, object]:
 
             Check for quality, consistency, and reliability.
             """
-            validation_result = await verification_agent.run(validation_prompt)
-            validation = validation_result.output
+            validation = await run_agent_with_tracing(verification_agent, validation_prompt, "verification_agent")
             duration_ms = int((perf_counter() - phase_start) * 1000)
 
             log.info(

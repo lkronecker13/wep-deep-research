@@ -813,18 +813,20 @@ def export_dataset_to_json(output_path: str | Path = "research/evaluation_datase
         >>> export_dataset_to_json()  # Uses default path
         >>> export_dataset_to_json("data/questions.json")  # Custom path
     """
+    import tempfile
     from pathlib import Path
 
     dataset = get_evaluation_dataset()
     output_file = Path(output_path).resolve()  # Resolve to absolute path
 
     # Validate path is within project or research directory (security)
-    # Allow /tmp for testing purposes
+    # Allow temp directories for testing purposes (cross-platform)
     allowed_dirs = [
         Path.cwd().resolve(),
         (Path.cwd() / "research").resolve(),
         Path("/tmp").resolve(),
         Path("/private/var/folders").resolve(),  # macOS tmp
+        Path(tempfile.gettempdir()).resolve(),  # Cross-platform temp directory
     ]
 
     if not any(output_file.is_relative_to(d) for d in allowed_dirs):

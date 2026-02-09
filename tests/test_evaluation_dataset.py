@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,7 @@ def test__export_dataset_to_json__rejects_path_traversal(tmp_path: Path) -> None
         export_dataset_to_json(traversal_path)
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod doesn't work reliably on Windows")
 def test__export_dataset_to_json__handles_permission_error(tmp_path: Path) -> None:
     """Should raise PermissionError when directory is read-only."""
     output_dir = tmp_path / "readonly"
