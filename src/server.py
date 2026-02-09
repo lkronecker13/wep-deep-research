@@ -5,6 +5,7 @@ from typing import AsyncIterator
 
 import structlog
 from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
@@ -139,6 +140,15 @@ Built with PydanticAI, FastAPI, and DBOS for durable workflow execution.
             "name": "Apache 2.0",
             "url": "https://www.apache.org/licenses/LICENSE-2.0",
         },
+    )
+
+    # Configure CORS middleware
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite and common dev ports
+        allow_credentials=True,
+        allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
+        allow_headers=["*"],  # Allow all headers
     )
 
     application.add_exception_handler(ResearchPipelineError, _handle_pipeline_error)  # type: ignore[arg-type]
