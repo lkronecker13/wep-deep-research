@@ -26,8 +26,6 @@ from research.evaluation.export import (
     export_evaluation_results,
 )
 from research.evaluation.schemas import (
-    BaseEvalCase,
-    EvalDataset,
     EvaluationLabel,
     EvaluationResult,
     ExecutionMetadata,
@@ -45,8 +43,6 @@ __all__ = [
     "EvaluationLabel",
     "EvaluationResult",
     "ExecutionMetadata",
-    "BaseEvalCase",
-    "EvalDataset",
     "TestPriority",
     # Export
     "EvaluationRunSummary",
