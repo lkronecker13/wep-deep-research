@@ -93,6 +93,60 @@ def _log_to_phoenix(eval_name: str, result: EvaluationResult, span_id: str | Non
         pass
 
 
+def _parse_llm_result(result_df: pd.DataFrame) -> tuple[EvaluationLabel, str, str | None]:
+    """Parse label and explanation from llm_classify result.
+
+    Returns:
+        (label, explanation, error_message)
+    """
+    error_message = None
+
+    # Extract and validate label
+    label_str = result_df["label"].iloc[0]
+    if pd.isna(label_str) or label_str not in ("pass", "fail"):
+        label = EvaluationLabel.FAIL
+        error_message = f"LLM returned invalid label: {label_str!r}"
+    else:
+        label = EvaluationLabel.PASS if label_str == "pass" else EvaluationLabel.FAIL
+
+    # Extract and validate explanation
+    raw_explanation = result_df["explanation"].iloc[0]
+    if pd.isna(raw_explanation) or not str(raw_explanation).strip():
+        explanation = "No explanation provided by the LLM."
+    else:
+        explanation = str(raw_explanation).strip()[:2000]
+
+    return label, explanation, error_message
+
+
+def _create_error_result(
+    start_time: float,
+    test_id: str,
+    agent_name: str,
+    evaluation_type: str,
+    config: EvaluatorConfig,
+    span_id: str | None,
+    error: Exception,
+) -> EvaluationResult:
+    """Build error result when evaluation fails."""
+    duration_ms = (perf_counter() - start_time) * 1000
+    return EvaluationResult(
+        test_id=test_id,
+        agent_name=agent_name,
+        label=EvaluationLabel.FAIL,
+        explanation=f"Evaluation failed: {error}",
+        evaluation_type=evaluation_type,
+        span_id=span_id,
+        error_message=str(error),
+        stack_trace=traceback.format_exc(),
+        execution_metadata=ExecutionMetadata(
+            duration_ms=duration_ms,
+            model_provider=config.model_provider,
+            model_name=config.model_name,
+        ),
+    )
+
+
 def evaluate_plan(
     plan: ResearchPlan,
     query: str,
@@ -143,39 +197,10 @@ def evaluate_plan(
                 provide_explanation=True,
             )
 
-        # Extract and validate label
-        # Note: Phoenix llm_classify returns lowercase labels ("pass", "fail")
-        label_str = result_df["label"].iloc[0]
-        if pd.isna(label_str) or label_str not in ("pass", "fail"):
-            label = EvaluationLabel.FAIL
-            error_message = f"LLM returned invalid label: {label_str!r}"
-        else:
-            label = EvaluationLabel.PASS if label_str == "pass" else EvaluationLabel.FAIL
-
-        # Extract and validate explanation
-        raw_explanation = result_df["explanation"].iloc[0]
-        if pd.isna(raw_explanation) or not str(raw_explanation).strip():
-            explanation = "No explanation provided by the LLM."
-        else:
-            explanation = str(raw_explanation).strip()[:2000]
+        label, explanation, error_message = _parse_llm_result(result_df)
 
     except Exception as e:
-        duration_ms = (perf_counter() - start_time) * 1000
-        return EvaluationResult(
-            test_id=test_id,
-            agent_name="planning_agent",
-            label=EvaluationLabel.FAIL,
-            explanation=f"Evaluation failed: {e}",
-            evaluation_type="plan_quality",
-            span_id=span_id,
-            error_message=str(e),
-            stack_trace=traceback.format_exc(),
-            execution_metadata=ExecutionMetadata(
-                duration_ms=duration_ms,
-                model_provider=config.model_provider,
-                model_name=config.model_name,
-            ),
-        )
+        return _create_error_result(start_time, test_id, "planning_agent", "plan_quality", config, span_id, e)
 
     duration_ms = (perf_counter() - start_time) * 1000
 
@@ -220,13 +245,6 @@ def evaluate_gathering(
     if config is None:
         config = EvaluatorConfig()
     start_time = perf_counter()
-    error_message: str | None = None
-
-    # Guard against accidentally passing a list
-    if isinstance(search_result, list):
-        raise TypeError(
-            "evaluate_gathering received a list of SearchResult objects. Call this function once per SearchResult."
-        )
 
     # Prepare the DataFrame for Phoenix llm_classify
     # Note: prompt uses {search_query}, model field is .query
@@ -252,39 +270,10 @@ def evaluate_gathering(
                 provide_explanation=True,
             )
 
-        # Extract and validate label
-        # Note: Phoenix llm_classify returns lowercase labels ("pass", "fail")
-        label_str = result_df["label"].iloc[0]
-        if pd.isna(label_str) or label_str not in ("pass", "fail"):
-            label = EvaluationLabel.FAIL
-            error_message = f"LLM returned invalid label: {label_str!r}"
-        else:
-            label = EvaluationLabel.PASS if label_str == "pass" else EvaluationLabel.FAIL
-
-        # Extract and validate explanation
-        raw_explanation = result_df["explanation"].iloc[0]
-        if pd.isna(raw_explanation) or not str(raw_explanation).strip():
-            explanation = "No explanation provided by the LLM."
-        else:
-            explanation = str(raw_explanation).strip()[:2000]
+        label, explanation, error_message = _parse_llm_result(result_df)
 
     except Exception as e:
-        duration_ms = (perf_counter() - start_time) * 1000
-        return EvaluationResult(
-            test_id=test_id,
-            agent_name="gathering_agent",
-            label=EvaluationLabel.FAIL,
-            explanation=f"Evaluation failed: {e}",
-            evaluation_type="source_quality",
-            span_id=span_id,
-            error_message=str(e),
-            stack_trace=traceback.format_exc(),
-            execution_metadata=ExecutionMetadata(
-                duration_ms=duration_ms,
-                model_provider=config.model_provider,
-                model_name=config.model_name,
-            ),
-        )
+        return _create_error_result(start_time, test_id, "gathering_agent", "source_quality", config, span_id, e)
 
     duration_ms = (perf_counter() - start_time) * 1000
 
@@ -359,39 +348,10 @@ def evaluate_synthesis(
                 provide_explanation=True,
             )
 
-        # Extract and validate label
-        # Note: Phoenix llm_classify returns lowercase labels ("pass", "fail")
-        label_str = result_df["label"].iloc[0]
-        if pd.isna(label_str) or label_str not in ("pass", "fail"):
-            label = EvaluationLabel.FAIL
-            error_message = f"LLM returned invalid label: {label_str!r}"
-        else:
-            label = EvaluationLabel.PASS if label_str == "pass" else EvaluationLabel.FAIL
-
-        # Extract and validate explanation
-        raw_explanation = result_df["explanation"].iloc[0]
-        if pd.isna(raw_explanation) or not str(raw_explanation).strip():
-            explanation = "No explanation provided by the LLM."
-        else:
-            explanation = str(raw_explanation).strip()[:2000]
+        label, explanation, error_message = _parse_llm_result(result_df)
 
     except Exception as e:
-        duration_ms = (perf_counter() - start_time) * 1000
-        return EvaluationResult(
-            test_id=test_id,
-            agent_name="synthesis_agent",
-            label=EvaluationLabel.FAIL,
-            explanation=f"Evaluation failed: {e}",
-            evaluation_type="report_quality",
-            span_id=span_id,
-            error_message=str(e),
-            stack_trace=traceback.format_exc(),
-            execution_metadata=ExecutionMetadata(
-                duration_ms=duration_ms,
-                model_provider=config.model_provider,
-                model_name=config.model_name,
-            ),
-        )
+        return _create_error_result(start_time, test_id, "synthesis_agent", "report_quality", config, span_id, e)
 
     duration_ms = (perf_counter() - start_time) * 1000
 
@@ -470,38 +430,11 @@ def evaluate_verification(
                 provide_explanation=True,
             )
 
-        # Extract and validate label
-        # Note: Phoenix llm_classify returns lowercase labels ("pass", "fail")
-        label_str = result_df["label"].iloc[0]
-        if pd.isna(label_str) or label_str not in ("pass", "fail"):
-            label = EvaluationLabel.FAIL
-            error_message = f"LLM returned invalid label: {label_str!r}"
-        else:
-            label = EvaluationLabel.PASS if label_str == "pass" else EvaluationLabel.FAIL
-
-        # Extract and validate explanation
-        raw_explanation = result_df["explanation"].iloc[0]
-        if pd.isna(raw_explanation) or not str(raw_explanation).strip():
-            explanation = "No explanation provided by the LLM."
-        else:
-            explanation = str(raw_explanation).strip()[:2000]
+        label, explanation, error_message = _parse_llm_result(result_df)
 
     except Exception as e:
-        duration_ms = (perf_counter() - start_time) * 1000
-        return EvaluationResult(
-            test_id=test_id,
-            agent_name="verification_agent",
-            label=EvaluationLabel.FAIL,
-            explanation=f"Evaluation failed: {e}",
-            evaluation_type="verification_quality",
-            span_id=span_id,
-            error_message=str(e),
-            stack_trace=traceback.format_exc(),
-            execution_metadata=ExecutionMetadata(
-                duration_ms=duration_ms,
-                model_provider=config.model_provider,
-                model_name=config.model_name,
-            ),
+        return _create_error_result(
+            start_time, test_id, "verification_agent", "verification_quality", config, span_id, e
         )
 
     duration_ms = (perf_counter() - start_time) * 1000
