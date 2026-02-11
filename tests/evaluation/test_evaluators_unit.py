@@ -6,6 +6,7 @@ import pytest
 from research.evaluation.evaluators import (
     EvaluatorConfig,
     _create_error_result,
+    _execute_evaluation,
     _parse_llm_result,
 )
 from research.evaluation.schemas import EvaluationLabel
@@ -94,3 +95,40 @@ class TestEvaluatorConfig:
         config = EvaluatorConfig()
         with pytest.raises(Exception):  # Pydantic raises ValidationError or AttributeError
             config.temperature = 0.5
+
+
+class TestExecuteEvaluation:
+    """Tests for _execute_evaluation core orchestration."""
+
+    def test__execute_evaluation__returns_pass_on_valid_response(self, mocker):
+        """Should return PASS result when LLM returns valid pass label."""
+        # Mock llm_classify to return valid PASS result
+        mock_classify = mocker.patch("research.evaluation.evaluators.llm_classify")
+        mock_classify.return_value = pd.DataFrame([{"label": "pass", "explanation": "Quality criteria met."}])
+
+        # Mock get_llm_model (not important for this test)
+        mocker.patch("research.evaluation.evaluators.get_llm_model")
+
+        # Execute
+        result = _execute_evaluation(
+            agent_name="test_agent",
+            evaluation_type="test_type",
+            template="test template with {field}",
+            data_row={"field": "value"},
+            test_id="test-001",
+            config=EvaluatorConfig(),
+            span_id=None,
+        )
+
+        # Verify behavior (not implementation)
+        assert result.test_id == "test-001"
+        assert result.agent_name == "test_agent"
+        assert result.evaluation_type == "test_type"
+        assert result.label == EvaluationLabel.PASS
+        assert result.explanation == "Quality criteria met."
+        assert result.error_message is None
+        assert result.span_id is None
+        assert result.execution_metadata is not None
+        assert result.execution_metadata.duration_ms > 0
+        assert result.execution_metadata.model_provider == "anthropic"
+        assert result.execution_metadata.model_name == "claude-sonnet-4-5"

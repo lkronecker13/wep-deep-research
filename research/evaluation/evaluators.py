@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import traceback
 from time import perf_counter
+from typing import Any
 
 import pandas as pd
 from openinference.instrumentation import suppress_tracing
@@ -157,6 +158,84 @@ def _create_error_result(
     )
 
 
+def _execute_evaluation(
+    agent_name: str,
+    evaluation_type: str,
+    template: str,
+    data_row: dict[str, Any],
+    test_id: str,
+    config: EvaluatorConfig,
+    span_id: str | None,
+) -> EvaluationResult:
+    """Generic evaluation executor reducing duplication across evaluators.
+
+    Executes the common evaluation workflow:
+    1. Prepare DataFrame from data_row
+    2. Initialize LLM model
+    3. Call llm_classify with template
+    4. Parse results
+    5. Build EvaluationResult
+    6. Log to Phoenix if configured
+
+    Args:
+        agent_name: Name of the agent being evaluated (e.g., "planning_agent")
+        evaluation_type: Type of evaluation (e.g., "plan_quality")
+        template: Phoenix evaluation prompt template
+        data_row: Dictionary of data fields for the evaluation
+        test_id: Unique test identifier
+        config: EvaluatorConfig with model and logging settings
+        span_id: Phoenix span ID for tracing correlation
+
+    Returns:
+        EvaluationResult with PASS/FAIL label and reasoning.
+    """
+    start_time = perf_counter()
+
+    # Prepare DataFrame for llm_classify
+    df = pd.DataFrame([data_row])
+
+    try:
+        # Run LLM classification (suppress tracing to keep agent traces clean)
+        model = get_llm_model(config)
+        with suppress_tracing():
+            result_df = llm_classify(
+                data=df,
+                model=model,
+                template=template,
+                rails=["PASS", "FAIL"],
+                provide_explanation=True,
+            )
+
+        label, explanation, error_message = _parse_llm_result(result_df)
+
+    except Exception as e:
+        return _create_error_result(start_time, test_id, agent_name, evaluation_type, config, span_id, e)
+
+    duration_ms = (perf_counter() - start_time) * 1000
+
+    # Build evaluation result
+    result = EvaluationResult(
+        test_id=test_id,
+        agent_name=agent_name,
+        label=label,
+        explanation=explanation,
+        evaluation_type=evaluation_type,
+        span_id=span_id,
+        error_message=error_message,
+        execution_metadata=ExecutionMetadata(
+            duration_ms=duration_ms,
+            model_provider=config.model_provider,
+            model_name=config.model_name,
+        ),
+    )
+
+    # Log to Phoenix if configured
+    if config.log_to_arize and span_id:
+        _log_to_phoenix(evaluation_type, result, span_id)
+
+    return result
+
+
 def evaluate_plan(
     plan: ResearchPlan,
     query: str,
@@ -176,63 +255,27 @@ def evaluate_plan(
     Returns:
         EvaluationResult with PASS/FAIL label and reasoning.
     """
-    if config is None:
-        config = EvaluatorConfig()
-    start_time = perf_counter()
-    error_message: str | None = None
+    config = config or EvaluatorConfig()
 
-    # Prepare the DataFrame for Phoenix llm_classify
-    df = pd.DataFrame(
-        [
-            {
-                "query": query,
-                "executive_summary": plan.executive_summary,
-                "web_search_steps": str(
-                    [{"search_terms": step.search_terms, "purpose": step.purpose} for step in plan.web_search_steps]
-                ),
-                "analysis_instructions": plan.analysis_instructions,
-            }
-        ]
-    )
-
-    try:
-        # Run the LLM classification (suppress tracing to keep agent traces clean)
-        model = get_llm_model(config)
-        with suppress_tracing():
-            result_df = llm_classify(
-                data=df,
-                model=model,
-                template=PLAN_QUALITY_PROMPT,
-                rails=["PASS", "FAIL"],
-                provide_explanation=True,
-            )
-
-        label, explanation, error_message = _parse_llm_result(result_df)
-
-    except Exception as e:
-        return _create_error_result(start_time, test_id, "planning_agent", "plan_quality", config, span_id, e)
-
-    duration_ms = (perf_counter() - start_time) * 1000
-
-    result = EvaluationResult(
-        test_id=test_id,
-        agent_name="planning_agent",
-        label=label,
-        explanation=explanation,
-        evaluation_type="plan_quality",
-        span_id=span_id,
-        error_message=error_message,
-        execution_metadata=ExecutionMetadata(
-            duration_ms=duration_ms,
-            model_provider=config.model_provider,
-            model_name=config.model_name,
+    # Prepare evaluation data
+    data_row = {
+        "query": query,
+        "executive_summary": plan.executive_summary,
+        "web_search_steps": str(
+            [{"search_terms": step.search_terms, "purpose": step.purpose} for step in plan.web_search_steps]
         ),
+        "analysis_instructions": plan.analysis_instructions,
+    }
+
+    return _execute_evaluation(
+        agent_name="planning_agent",
+        evaluation_type="plan_quality",
+        template=PLAN_QUALITY_PROMPT,
+        data_row=data_row,
+        test_id=test_id,
+        config=config,
+        span_id=span_id,
     )
-
-    if config.log_to_arize and span_id:
-        _log_to_phoenix("plan_quality", result, span_id)
-
-    return result
 
 
 def evaluate_gathering(
@@ -252,60 +295,24 @@ def evaluate_gathering(
     Returns:
         EvaluationResult with PASS/FAIL label and reasoning.
     """
-    if config is None:
-        config = EvaluatorConfig()
-    start_time = perf_counter()
+    config = config or EvaluatorConfig()
 
-    # Prepare the DataFrame for Phoenix llm_classify
-    # Note: prompt uses {search_query}, model field is .query
-    df = pd.DataFrame(
-        [
-            {
-                "search_query": search_result.query,
-                "findings": str(search_result.findings),
-                "sources": str(search_result.sources),
-            }
-        ]
-    )
+    # Prepare evaluation data
+    data_row = {
+        "search_query": search_result.query,
+        "findings": str(search_result.findings),
+        "sources": str(search_result.sources),
+    }
 
-    try:
-        # Run the LLM classification (suppress tracing to keep agent traces clean)
-        model = get_llm_model(config)
-        with suppress_tracing():
-            result_df = llm_classify(
-                data=df,
-                model=model,
-                template=SOURCE_QUALITY_PROMPT,
-                rails=["PASS", "FAIL"],
-                provide_explanation=True,
-            )
-
-        label, explanation, error_message = _parse_llm_result(result_df)
-
-    except Exception as e:
-        return _create_error_result(start_time, test_id, "gathering_agent", "source_quality", config, span_id, e)
-
-    duration_ms = (perf_counter() - start_time) * 1000
-
-    result = EvaluationResult(
-        test_id=test_id,
+    return _execute_evaluation(
         agent_name="gathering_agent",
-        label=label,
-        explanation=explanation,
         evaluation_type="source_quality",
+        template=SOURCE_QUALITY_PROMPT,
+        data_row=data_row,
+        test_id=test_id,
+        config=config,
         span_id=span_id,
-        error_message=error_message,
-        execution_metadata=ExecutionMetadata(
-            duration_ms=duration_ms,
-            model_provider=config.model_provider,
-            model_name=config.model_name,
-        ),
     )
-
-    if config.log_to_arize and span_id:
-        _log_to_phoenix("source_quality", result, span_id)
-
-    return result
 
 
 def evaluate_synthesis(
@@ -327,63 +334,27 @@ def evaluate_synthesis(
     Returns:
         EvaluationResult with PASS/FAIL label and reasoning.
     """
-    if config is None:
-        config = EvaluatorConfig()
-    start_time = perf_counter()
-    error_message: str | None = None
+    config = config or EvaluatorConfig()
 
-    # Prepare the DataFrame for Phoenix llm_classify
-    df = pd.DataFrame(
-        [
-            {
-                "query": query,
-                "title": report.title,
-                "summary": report.summary,
-                "key_findings": str(report.key_findings),
-                "sources": str(report.sources),
-                "limitations": str(report.limitations),
-            }
-        ]
-    )
+    # Prepare evaluation data
+    data_row = {
+        "query": query,
+        "title": report.title,
+        "summary": report.summary,
+        "key_findings": str(report.key_findings),
+        "sources": str(report.sources),
+        "limitations": str(report.limitations),
+    }
 
-    try:
-        # Run the LLM classification (suppress tracing to keep agent traces clean)
-        model = get_llm_model(config)
-        with suppress_tracing():
-            result_df = llm_classify(
-                data=df,
-                model=model,
-                template=REPORT_QUALITY_PROMPT,
-                rails=["PASS", "FAIL"],
-                provide_explanation=True,
-            )
-
-        label, explanation, error_message = _parse_llm_result(result_df)
-
-    except Exception as e:
-        return _create_error_result(start_time, test_id, "synthesis_agent", "report_quality", config, span_id, e)
-
-    duration_ms = (perf_counter() - start_time) * 1000
-
-    result = EvaluationResult(
-        test_id=test_id,
+    return _execute_evaluation(
         agent_name="synthesis_agent",
-        label=label,
-        explanation=explanation,
         evaluation_type="report_quality",
+        template=REPORT_QUALITY_PROMPT,
+        data_row=data_row,
+        test_id=test_id,
+        config=config,
         span_id=span_id,
-        error_message=error_message,
-        execution_metadata=ExecutionMetadata(
-            duration_ms=duration_ms,
-            model_provider=config.model_provider,
-            model_name=config.model_name,
-        ),
     )
-
-    if config.log_to_arize and span_id:
-        _log_to_phoenix("report_quality", result, span_id)
-
-    return result
 
 
 def evaluate_verification(
@@ -405,66 +376,27 @@ def evaluate_verification(
     Returns:
         EvaluationResult with PASS/FAIL label and reasoning.
     """
-    if config is None:
-        config = EvaluatorConfig()
-    start_time = perf_counter()
-    error_message: str | None = None
+    config = config or EvaluatorConfig()
 
-    # Prepare the DataFrame for Phoenix llm_classify
-    # Verification needs both the report context and the validation result
-    df = pd.DataFrame(
-        [
-            {
-                "report_title": report.title,
-                "report_summary": report.summary,
-                "report_key_findings": str(report.key_findings),
-                "report_sources": str(report.sources),
-                "report_limitations": str(report.limitations),
-                "is_valid": str(validation.is_valid),
-                "confidence_score": validation.confidence_score,
-                "issues_found": str(validation.issues_found),
-                "recommendations": str(validation.recommendations),
-            }
-        ]
-    )
+    # Prepare evaluation data (verification needs both report context and validation result)
+    data_row = {
+        "report_title": report.title,
+        "report_summary": report.summary,
+        "report_key_findings": str(report.key_findings),
+        "report_sources": str(report.sources),
+        "report_limitations": str(report.limitations),
+        "is_valid": str(validation.is_valid),
+        "confidence_score": validation.confidence_score,
+        "issues_found": str(validation.issues_found),
+        "recommendations": str(validation.recommendations),
+    }
 
-    try:
-        # Run the LLM classification (suppress tracing to keep agent traces clean)
-        model = get_llm_model(config)
-        with suppress_tracing():
-            result_df = llm_classify(
-                data=df,
-                model=model,
-                template=VERIFICATION_QUALITY_PROMPT,
-                rails=["PASS", "FAIL"],
-                provide_explanation=True,
-            )
-
-        label, explanation, error_message = _parse_llm_result(result_df)
-
-    except Exception as e:
-        return _create_error_result(
-            start_time, test_id, "verification_agent", "verification_quality", config, span_id, e
-        )
-
-    duration_ms = (perf_counter() - start_time) * 1000
-
-    result = EvaluationResult(
-        test_id=test_id,
+    return _execute_evaluation(
         agent_name="verification_agent",
-        label=label,
-        explanation=explanation,
         evaluation_type="verification_quality",
+        template=VERIFICATION_QUALITY_PROMPT,
+        data_row=data_row,
+        test_id=test_id,
+        config=config,
         span_id=span_id,
-        error_message=error_message,
-        execution_metadata=ExecutionMetadata(
-            duration_ms=duration_ms,
-            model_provider=config.model_provider,
-            model_name=config.model_name,
-        ),
     )
-
-    if config.log_to_arize and span_id:
-        _log_to_phoenix("verification_quality", result, span_id)
-
-    return result
