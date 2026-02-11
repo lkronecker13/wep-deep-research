@@ -1,7 +1,7 @@
 """Production evaluation dataset loaded from JSON.
 
 Loads 35 evaluation questions across 7 consulting domains from
-production_questions.json at module import time with Pydantic validation.
+research/data/production_questions.json with Pydantic validation.
 
 Priority Distribution:
 - P0: 7 questions (smoke tests)
@@ -56,7 +56,7 @@ class ProductionEvalQuestion(BaseModel):
 def _load_production_questions() -> list[ProductionEvalQuestion]:
     """Load production questions from JSON file.
 
-    Loads from research/evaluation/production_questions.json and validates
+    Loads from research/data/production_questions.json and validates
     all questions using Pydantic models.
 
     Returns:
@@ -68,7 +68,7 @@ def _load_production_questions() -> list[ProductionEvalQuestion]:
         pydantic.ValidationError: If questions fail Pydantic validation.
     """
     # Construct path relative to this file
-    json_path = Path(__file__).parent / "production_questions.json"
+    json_path = Path(__file__).parent.parent / "data" / "production_questions.json"
 
     # Check file exists (fail fast with clear message)
     if not json_path.exists():
@@ -76,7 +76,7 @@ def _load_production_questions() -> list[ProductionEvalQuestion]:
             f"\nProduction questions JSON not found at: {json_path.resolve()}\n\n"
             "This file must exist for the evaluation system to function.\n"
             "If you are setting up a new environment, ensure the file is present in version control.\n"
-            "Expected location: research/evaluation/production_questions.json"
+            "Expected location: research/data/production_questions.json"
         )
 
     # Load and parse JSON

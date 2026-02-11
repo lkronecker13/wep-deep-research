@@ -187,6 +187,7 @@ data/
 
 # Jupyter/Research
 research/data/
+!research/data/production_questions.json
 research/outputs/
 research/models/
 research/experiments/results/
