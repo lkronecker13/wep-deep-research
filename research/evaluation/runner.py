@@ -14,85 +14,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 import sys
 
 from dotenv import load_dotenv
 
+from research.evaluation.tracing import init_phoenix_tracing
+
 # Load environment variables first
 load_dotenv()
 
-
-def _init_phoenix_tracing() -> bool:
-    """Initialize Phoenix OpenTelemetry tracing for Arize Cloud.
-
-    Phoenix Client automatically reads PHOENIX_API_KEY and PHOENIX_COLLECTOR_ENDPOINT
-    from environment variables.
-
-    Returns:
-        True if tracing was initialized successfully, False otherwise.
-    """
-    try:
-        from phoenix.otel import register
-
-        # Check if API key is configured
-        if not os.environ.get("PHOENIX_API_KEY"):
-            print("WARNING: PHOENIX_API_KEY not set. Evaluations will not be logged to Arize Cloud.")
-            return False
-
-        # Register the tracer provider (Phoenix reads endpoint from env automatically)
-        tracer_provider = register(project_name="deep-research-evals")
-
-        # Enable instrumentors for LLM libraries
-        _enable_instrumentors(tracer_provider)
-
-        print("Phoenix tracing initialized for Arize Cloud")
-        return True
-
-    except ImportError as e:
-        print(f"WARNING: Phoenix tracing not available: {e}")
-        return False
-    except Exception as e:
-        print(f"WARNING: Failed to initialize Phoenix tracing: {e}")
-        return False
-
-
-def _enable_instrumentors(tracer_provider: object) -> None:
-    """Enable OpenInference instrumentors for agents and LLM libraries.
-
-    Args:
-        tracer_provider: The OpenTelemetry tracer provider from Phoenix.
-    """
-    # Note: PydanticAI uses InstrumentationSettings(version=2) on agents directly
-    # The openinference-instrumentation-pydantic-ai package provides OpenInferenceSpanProcessor
-    # but it conflicts with async TaskGroup execution, so we rely on the native instrumentation
-    print("  - PydanticAI native instrumentation enabled (via InstrumentationSettings on agents)")
-
-    # Instrument Anthropic (Claude)
-    try:
-        from openinference.instrumentation.anthropic import AnthropicInstrumentor
-
-        AnthropicInstrumentor().instrument(tracer_provider=tracer_provider)
-        print("  - Anthropic instrumentation enabled")
-    except ImportError:
-        print("  - Anthropic instrumentation not available (install openinference-instrumentation-anthropic)")
-    except Exception as e:
-        print(f"  - Anthropic instrumentation failed: {e}")
-
-    # Instrument Google GenAI (Gemini)
-    try:
-        from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
-
-        GoogleGenAIInstrumentor().instrument(tracer_provider=tracer_provider)
-        print("  - Google GenAI instrumentation enabled")
-    except ImportError:
-        print("  - Google GenAI instrumentation not available (install openinference-instrumentation-google-genai)")
-    except Exception as e:
-        print(f"  - Google GenAI instrumentation failed: {e}")
-
-
 # Initialize tracing at module load
-_TRACING_ENABLED = _init_phoenix_tracing()
+_TRACING_ENABLED = init_phoenix_tracing()
 
 # Now import the rest after tracing is set up
 # ruff: noqa: E402 - Imports must be after Phoenix tracing initialization
