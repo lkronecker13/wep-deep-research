@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 
 from pydantic import BaseModel, Field
@@ -95,8 +96,14 @@ def _load_production_questions() -> list[ProductionEvalQuestion]:
     return questions
 
 
-# Production dataset with 35 questions loaded from JSON
-_PRODUCTION_QUESTIONS: list[ProductionEvalQuestion] = _load_production_questions()
+@lru_cache(maxsize=1)
+def _get_production_questions() -> list[ProductionEvalQuestion]:
+    """Lazy-loaded cached production questions.
+
+    Uses @lru_cache to load JSON only on first access, then cache result.
+    This prevents import-time side effects and matches the pattern in agents.py.
+    """
+    return _load_production_questions()
 
 
 def get_production_dataset() -> list[ProductionEvalQuestion]:
@@ -105,7 +112,7 @@ def get_production_dataset() -> list[ProductionEvalQuestion]:
     Returns:
         List of 35 evaluation questions across 7 domains (5 per domain).
     """
-    return _PRODUCTION_QUESTIONS.copy()
+    return _get_production_questions().copy()
 
 
 def get_smoke_test_subset() -> list[ProductionEvalQuestion]:
@@ -114,7 +121,7 @@ def get_smoke_test_subset() -> list[ProductionEvalQuestion]:
     Returns:
         List of 7 smoke test questions (1 per domain).
     """
-    return [q for q in _PRODUCTION_QUESTIONS if q.priority == TestPriority.P0]
+    return [q for q in _get_production_questions() if q.priority == TestPriority.P0]
 
 
 def get_critical_subset() -> list[ProductionEvalQuestion]:
@@ -123,7 +130,7 @@ def get_critical_subset() -> list[ProductionEvalQuestion]:
     Returns:
         List of 14 high-priority questions (2 per domain).
     """
-    return [q for q in _PRODUCTION_QUESTIONS if q.priority in (TestPriority.P0, TestPriority.P1)]
+    return [q for q in _get_production_questions() if q.priority in (TestPriority.P0, TestPriority.P1)]
 
 
 def get_domain_questions(domain: ConsultingDomain) -> list[ProductionEvalQuestion]:
@@ -135,7 +142,7 @@ def get_domain_questions(domain: ConsultingDomain) -> list[ProductionEvalQuestio
     Returns:
         List of 5 questions for the specified domain.
     """
-    return [q for q in _PRODUCTION_QUESTIONS if q.domain == domain]
+    return [q for q in _get_production_questions() if q.domain == domain]
 
 
 def get_questions_by_tag(tag: str) -> list[ProductionEvalQuestion]:
@@ -148,7 +155,7 @@ def get_questions_by_tag(tag: str) -> list[ProductionEvalQuestion]:
         List of questions containing the specified tag.
     """
     tag_lower = tag.lower()
-    return [q for q in _PRODUCTION_QUESTIONS if tag_lower in [t.lower() for t in q.tags]]
+    return [q for q in _get_production_questions() if tag_lower in [t.lower() for t in q.tags]]
 
 
 def get_questions_by_priority(priority: TestPriority) -> list[ProductionEvalQuestion]:
@@ -160,4 +167,4 @@ def get_questions_by_priority(priority: TestPriority) -> list[ProductionEvalQues
     Returns:
         List of questions with the specified priority.
     """
-    return [q for q in _PRODUCTION_QUESTIONS if q.priority == priority]
+    return [q for q in _get_production_questions() if q.priority == priority]

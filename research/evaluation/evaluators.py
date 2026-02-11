@@ -18,7 +18,6 @@ from time import perf_counter
 
 import pandas as pd
 from openinference.instrumentation import suppress_tracing
-from phoenix import Client
 from phoenix.evals import llm_classify
 from phoenix.evals.models import AnthropicModel
 from pydantic import BaseModel, ConfigDict, Field
@@ -72,25 +71,36 @@ def _log_to_phoenix(eval_name: str, result: EvaluationResult, span_id: str | Non
     The Client automatically reads PHOENIX_API_KEY and PHOENIX_COLLECTOR_ENDPOINT
     from environment variables for Arize Cloud authentication.
 
-    Failures are silently ignored to avoid crashing the evaluation.
+    Failures are logged at debug level to aid troubleshooting.
     """
     if span_id is None:
         return
 
     try:
-        from phoenix.client.types import SpanAnnotation
+        from phoenix.client import Client
+        from phoenix.client.resources.spans import SpanAnnotationData
 
         label = "PASS" if result.label == EvaluationLabel.PASS else "FAIL"
-        annotation = SpanAnnotation(
-            span_id=span_id,
-            name=eval_name,
-            annotator_kind="LLM",
-            result={"label": label, "explanation": result.explanation},
+
+        annotation: SpanAnnotationData = {
+            "span_id": span_id,
+            "name": eval_name,
+            "annotator_kind": "LLM",
+            "result": {
+                "label": label,
+                "explanation": result.explanation,
+            },
+        }
+
+        Client().spans.log_span_annotations(
+            span_annotations=[annotation],
+            sync=False,
         )
-        Client().spans.log_span_annotations(annotations=[annotation])
-    except Exception:
-        # Phoenix logging is best-effort; don't crash the evaluation
-        pass
+    except Exception as e:
+        # Phoenix logging is best-effort; log failures for debugging
+        import logging
+
+        logging.getLogger(__name__).debug(f"Phoenix logging failed: {e}")
 
 
 def _parse_llm_result(result_df: pd.DataFrame) -> tuple[EvaluationLabel, str, str | None]:
