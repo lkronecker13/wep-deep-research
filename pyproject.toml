@@ -21,6 +21,16 @@ dependencies = [
     "gunicorn>=23.0.0",
     # OpenAPI export
     "pyyaml>=6.0.0",
+    # Evaluation & Observability
+    "pandas>=2.0.0",
+    "arize-phoenix>=8.0.0",
+    "arize-phoenix-evals>=2.8.0",
+    "arize-phoenix-otel>=0.13.0",
+    "openinference-instrumentation>=0.1.12",
+    # OpenInference instrumentors for tracing agents and LLM calls
+    "openinference-instrumentation-pydantic-ai>=0.1.0",
+    "openinference-instrumentation-anthropic>=0.1.0",
+    "openinference-instrumentation-google-genai>=0.1.0",
 ]
 
 [project.optional-dependencies]
