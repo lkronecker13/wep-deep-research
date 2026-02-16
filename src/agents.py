@@ -18,6 +18,9 @@ DEFAULT_GATHERING_MODEL = os.getenv("RESEARCH_GATHERING_MODEL", "google-gla:gemi
 DEFAULT_SYNTHESIS_MODEL = os.getenv("RESEARCH_SYNTHESIS_MODEL", "anthropic:claude-sonnet-4-5")
 DEFAULT_VERIFICATION_MODEL = os.getenv("RESEARCH_VERIFICATION_MODEL", "anthropic:claude-sonnet-4-5")
 
+# Retry configuration
+GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
+
 
 def create_plan_agent(model: Any = DEFAULT_PLAN_MODEL) -> Agent[None, ResearchPlan]:
     """Uncached factory - use with TestModel for tests."""
@@ -44,8 +47,11 @@ def get_plan_agent(model: str = DEFAULT_PLAN_MODEL) -> Agent[None, ResearchPlan]
     return create_plan_agent(model)
 
 
-def create_gathering_agent(model: Any = DEFAULT_GATHERING_MODEL) -> Agent[None, SearchResult]:
+def create_gathering_agent(
+    model: Any = DEFAULT_GATHERING_MODEL, retries: int | None = None
+) -> Agent[None, SearchResult]:
     """Uncached factory - use with TestModel for tests."""
+    retry_count = retries if retries is not None else GEMINI_MAX_RETRIES
     return Agent(
         model,
         instructions="""You are a research gatherer. Execute the search and extract
@@ -58,6 +64,7 @@ def create_gathering_agent(model: Any = DEFAULT_GATHERING_MODEL) -> Agent[None, 
         - Avoid speculation or unsupported claims
         Return structured findings with source URLs.""",
         builtin_tools=[WebSearchTool()],
+        retries=retry_count,
         output_type=SearchResult,
         instrument=True,
         name="gathering_agent",

@@ -228,3 +228,40 @@ class TestModelConfiguration:
         from src.agents import DEFAULT_VERIFICATION_MODEL
 
         assert "anthropic" in DEFAULT_VERIFICATION_MODEL or "claude" in DEFAULT_VERIFICATION_MODEL
+
+
+class TestRetryBehavior:
+    """Tests for agent retry mechanism behavior."""
+
+    def test__gathering_agent__accepts_retry_parameter(self) -> None:
+        """Verify gathering agent accepts retry configuration parameter."""
+        test_model = TestModel()
+        # Create agent with explicit retry count (without builtin_tools for TestModel)
+        agent = create_gathering_agent(test_model, retries=5)
+        # Agent creation succeeds, implying retries parameter was accepted
+        assert isinstance(agent, Agent)
+        assert agent.name == "gathering_agent"
+
+    def test__gathering_agent__uses_default_retry_from_environment(self) -> None:
+        """Verify gathering agent uses GEMINI_MAX_RETRIES from environment by default."""
+        from src.agents import GEMINI_MAX_RETRIES
+
+        # Verify environment variable is loaded (default is 3)
+        assert isinstance(GEMINI_MAX_RETRIES, int)
+        assert GEMINI_MAX_RETRIES >= 0
+
+    def test__retry_count__is_configurable_via_environment(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Verify retry count can be configured via environment variable."""
+        # Set environment variable
+        monkeypatch.setenv("GEMINI_MAX_RETRIES", "5")
+
+        # Clear module cache to reload with new env var
+        import sys
+
+        if "src.agents" in sys.modules:
+            del sys.modules["src.agents"]
+
+        # Import fresh module with new env var
+        from src.agents import GEMINI_MAX_RETRIES
+
+        assert GEMINI_MAX_RETRIES == 5

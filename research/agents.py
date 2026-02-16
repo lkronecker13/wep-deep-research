@@ -1,5 +1,6 @@
 """PydanticAI agents for deep research workflow."""
 
+import os
 from functools import lru_cache
 
 from pydantic_ai import Agent, WebSearchTool
@@ -9,6 +10,9 @@ from research.models import ResearchPlan, ResearchReport, SearchResult, Validati
 # Model configuration - centralized for easy updates
 CLAUDE_MODEL = "anthropic:claude-sonnet-4-5"
 GEMINI_MODEL = "google-gla:gemini-2.5-flash"
+
+# Retry configuration
+GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
 
 
 @lru_cache(maxsize=1)
@@ -47,8 +51,19 @@ def get_gathering_agent() -> Agent[None, SearchResult]:
         - Focus on accuracy and relevance
         - Avoid speculation or unsupported claims
 
-        Return structured findings with source URLs.""",
+        CRITICAL - JSON Output Requirements:
+        - Return ONLY valid JSON that parses correctly
+        - Each finding must be a complete string (no truncation)
+        - Each source must be a valid URL string
+        - Do NOT wrap output in markdown code blocks (no ```json markers)
+        - Do NOT include trailing commas in arrays or objects
+        - Ensure all strings use proper escape sequences (\\n, \\", \\\\)
+        - Do NOT truncate output - complete all fields fully
+        - If unsure about a finding, omit it rather than returning incomplete data
+
+        Return structured findings with source URLs as valid JSON.""",
         builtin_tools=[WebSearchTool()],
+        retries=GEMINI_MAX_RETRIES,
         output_type=SearchResult,
         name="gathering_agent",
     )
