@@ -1,0 +1,422 @@
+[
+  {
+    "id": "data_001",
+    "query": "What is the difference between Snowflake and Databricks for data warehousing?",
+    "domain": "data",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "architecture",
+      "cloud-data"
+    ],
+    "description": "Smoke test: Basic cloud data platform comparison"
+  },
+  {
+    "id": "data_002",
+    "query": "What are best practices for implementing CDC (Change Data Capture) in modern data pipelines?",
+    "domain": "data",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "data-engineering",
+      "real-time"
+    ],
+    "description": "Core: Real-time data integration patterns"
+  },
+  {
+    "id": "data_003",
+    "query": "How should organizations choose between dbt Cloud and custom Airflow DAGs for data transformation?",
+    "domain": "data",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "tooling",
+      "orchestration"
+    ],
+    "description": "Standard: Data transformation tool selection"
+  },
+  {
+    "id": "data_004",
+    "query": "What are the performance optimization strategies for large-scale data joins in BigQuery?",
+    "domain": "data",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "performance",
+      "bigquery"
+    ],
+    "description": "Standard: Cloud DW performance tuning"
+  },
+  {
+    "id": "data_005",
+    "query": "How do data mesh principles change the traditional centralized data warehouse approach?",
+    "domain": "data",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "architecture",
+      "emerging"
+    ],
+    "description": "Advanced: Emerging data architecture paradigms"
+  },
+  {
+    "id": "cyber_001",
+    "query": "What are the OWASP Top 10 security vulnerabilities and how should organizations address them?",
+    "domain": "cybersecurity",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "compliance"
+    ],
+    "description": "Smoke test: Core web security knowledge"
+  },
+  {
+    "id": "cyber_002",
+    "query": "What security controls should be implemented for LLM applications handling sensitive data?",
+    "domain": "cybersecurity",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "ai-security",
+      "emerging"
+    ],
+    "description": "Core: AI application security requirements"
+  },
+  {
+    "id": "cyber_003",
+    "query": "How do zero-trust architecture principles apply to cloud-native applications?",
+    "domain": "cybersecurity",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "cloud-security",
+      "architecture"
+    ],
+    "description": "Standard: Modern security architecture"
+  },
+  {
+    "id": "cyber_004",
+    "query": "What are the compliance requirements and technical controls for SOC 2 Type II certification?",
+    "domain": "cybersecurity",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "compliance",
+      "audit"
+    ],
+    "description": "Standard: Compliance framework implementation"
+  },
+  {
+    "id": "cyber_005",
+    "query": "How can organizations detect and prevent supply chain attacks in their software dependencies?",
+    "domain": "cybersecurity",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "supply-chain",
+      "threat-detection"
+    ],
+    "description": "Advanced: Supply chain security"
+  },
+  {
+    "id": "ai_001",
+    "query": "What is RAG (Retrieval Augmented Generation) and when should it be used versus fine-tuning?",
+    "domain": "ai",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "llm"
+    ],
+    "description": "Smoke test: Core LLM architecture patterns"
+  },
+  {
+    "id": "ai_002",
+    "query": "How do you evaluate and compare different LLM providers for production applications?",
+    "domain": "ai",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "evaluation",
+      "production"
+    ],
+    "description": "Core: LLM provider selection criteria"
+  },
+  {
+    "id": "ai_003",
+    "query": "What are the architectural patterns for building multi-agent AI systems?",
+    "domain": "ai",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "architecture",
+      "agents"
+    ],
+    "description": "Standard: Multi-agent system design"
+  },
+  {
+    "id": "ai_004",
+    "query": "What are the key considerations for deploying ML models in production environments?",
+    "domain": "ai",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "mlops",
+      "deployment"
+    ],
+    "description": "Standard: MLOps best practices"
+  },
+  {
+    "id": "ai_005",
+    "query": "What strategies exist for reducing hallucinations in LLM-powered enterprise applications?",
+    "domain": "ai",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "quality",
+      "reliability"
+    ],
+    "description": "Advanced: LLM reliability engineering"
+  },
+  {
+    "id": "finance_001",
+    "query": "What are the key financial metrics for evaluating SaaS company performance?",
+    "domain": "finance",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "saas"
+    ],
+    "description": "Smoke test: Core SaaS financial metrics"
+  },
+  {
+    "id": "finance_002",
+    "query": "How should CFOs evaluate the ROI of AI and automation investments?",
+    "domain": "finance",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "roi",
+      "ai-investment"
+    ],
+    "description": "Core: Technology investment analysis"
+  },
+  {
+    "id": "finance_003",
+    "query": "What are best practices for financial forecasting in high-growth tech companies?",
+    "domain": "finance",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "forecasting",
+      "planning"
+    ],
+    "description": "Standard: FP&A for tech companies"
+  },
+  {
+    "id": "finance_004",
+    "query": "How does ASC 606 revenue recognition apply to multi-year SaaS contracts?",
+    "domain": "finance",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "compliance",
+      "accounting"
+    ],
+    "description": "Standard: Revenue recognition compliance"
+  },
+  {
+    "id": "finance_005",
+    "query": "What financial controls and processes are needed for SOX compliance in tech startups?",
+    "domain": "finance",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "compliance",
+      "controls"
+    ],
+    "description": "Advanced: Financial compliance readiness"
+  },
+  {
+    "id": "sales_001",
+    "query": "What are the stages of a typical B2B SaaS sales pipeline?",
+    "domain": "sales",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "pipeline"
+    ],
+    "description": "Smoke test: Core sales process knowledge"
+  },
+  {
+    "id": "sales_002",
+    "query": "How can sales teams use AI-powered tools to improve pipeline conversion rates?",
+    "domain": "sales",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "ai-sales",
+      "optimization"
+    ],
+    "description": "Core: AI-enhanced sales operations"
+  },
+  {
+    "id": "sales_003",
+    "query": "What CRM implementation strategies work best for enterprise sales organizations?",
+    "domain": "sales",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "crm",
+      "implementation"
+    ],
+    "description": "Standard: CRM deployment best practices"
+  },
+  {
+    "id": "sales_004",
+    "query": "How do product-led growth and sales-led growth strategies differ for B2B SaaS?",
+    "domain": "sales",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "strategy",
+      "growth"
+    ],
+    "description": "Standard: Go-to-market strategy comparison"
+  },
+  {
+    "id": "sales_005",
+    "query": "What metrics should sales leaders track to diagnose pipeline health issues?",
+    "domain": "sales",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "analytics",
+      "metrics"
+    ],
+    "description": "Advanced: Sales analytics and diagnostics"
+  },
+  {
+    "id": "mgmt_001",
+    "query": "What are the key elements of OKRs (Objectives and Key Results) for tech companies?",
+    "domain": "management",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "planning"
+    ],
+    "description": "Smoke test: Core goal-setting framework"
+  },
+  {
+    "id": "mgmt_002",
+    "query": "How should tech companies structure their engineering teams for maximum productivity?",
+    "domain": "management",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "org-design",
+      "engineering"
+    ],
+    "description": "Core: Engineering organization design"
+  },
+  {
+    "id": "mgmt_003",
+    "query": "What are effective strategies for managing remote and hybrid development teams?",
+    "domain": "management",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "remote-work",
+      "culture"
+    ],
+    "description": "Standard: Distributed team management"
+  },
+  {
+    "id": "mgmt_004",
+    "query": "How do companies transition from project-based to product-based operating models?",
+    "domain": "management",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "transformation",
+      "product"
+    ],
+    "description": "Standard: Operating model transformation"
+  },
+  {
+    "id": "mgmt_005",
+    "query": "What frameworks exist for making effective technology architecture decisions?",
+    "domain": "management",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "architecture",
+      "decision-making"
+    ],
+    "description": "Advanced: Technical decision frameworks"
+  },
+  {
+    "id": "mktg_001",
+    "query": "What are the key stages of a B2B marketing funnel?",
+    "domain": "marketing",
+    "priority": "blocker",
+    "tags": [
+      "smoke",
+      "fundamentals",
+      "funnel"
+    ],
+    "description": "Smoke test: Core marketing funnel knowledge"
+  },
+  {
+    "id": "mktg_002",
+    "query": "How are companies using AI for content marketing and SEO optimization?",
+    "domain": "marketing",
+    "priority": "critical",
+    "tags": [
+      "regression",
+      "ai-marketing",
+      "content"
+    ],
+    "description": "Core: AI-powered marketing strategies"
+  },
+  {
+    "id": "mktg_003",
+    "query": "What attribution models work best for multi-touch B2B marketing campaigns?",
+    "domain": "marketing",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "analytics",
+      "attribution"
+    ],
+    "description": "Standard: Marketing measurement and attribution"
+  },
+  {
+    "id": "mktg_004",
+    "query": "How should companies structure their marketing technology stack in 2025?",
+    "domain": "marketing",
+    "priority": "high",
+    "tags": [
+      "regression",
+      "martech",
+      "tooling"
+    ],
+    "description": "Standard: Martech stack architecture"
+  },
+  {
+    "id": "mktg_005",
+    "query": "What are effective strategies for account-based marketing in enterprise tech sales?",
+    "domain": "marketing",
+    "priority": "medium",
+    "tags": [
+      "regression",
+      "abm",
+      "enterprise"
+    ],
+    "description": "Advanced: ABM program design"
+  }
+]

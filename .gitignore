@@ -187,6 +187,7 @@ data/
 
 # Jupyter/Research
 research/data/
+!research/data/production_questions.json
 research/outputs/
 research/models/
 research/experiments/results/
@@ -284,3 +285,4 @@ docs/ARCHITECTURE_DECISIONS.md
 docs/IMPLEMENTATION_GUIDE.md
 docs/IMPLEMENTATION_PLAN.md
 docs/PHASE1_IMPLEMENTATION.md
+.claude/

@@ -4,6 +4,7 @@ import os
 from functools import lru_cache
 
 from pydantic_ai import Agent, WebSearchTool
+from pydantic_ai.agent import InstrumentationSettings
 
 from research.models import ResearchPlan, ResearchReport, SearchResult, ValidationResult
 
@@ -33,6 +34,7 @@ def get_plan_agent() -> Agent[None, ResearchPlan]:
         Keep search steps focused and specific.""",
         output_type=ResearchPlan,
         name="plan_agent",
+        instrument=InstrumentationSettings(version=2),
     )
 
 
@@ -61,11 +63,15 @@ def get_gathering_agent() -> Agent[None, SearchResult]:
         - Do NOT truncate output - complete all fields fully
         - If unsure about a finding, omit it rather than returning incomplete data
 
-        Return structured findings with source URLs as valid JSON.""",
+        Your output MUST include:
+        - query: the search query you executed
+        - findings: a list of key findings (strings)
+        - sources: a list of source URLs (strings)""",
         builtin_tools=[WebSearchTool()],
         retries=GEMINI_MAX_RETRIES,
         output_type=SearchResult,
         name="gathering_agent",
+        instrument=InstrumentationSettings(version=2),
     )
 
 
@@ -88,6 +94,7 @@ def get_synthesis_agent() -> Agent[None, ResearchReport]:
         Do not invent information. Stay grounded in the provided search results.""",
         output_type=ResearchReport,
         name="synthesis_agent",
+        instrument=InstrumentationSettings(version=2),
     )
 
 
@@ -115,4 +122,5 @@ def get_verification_agent() -> Agent[None, ValidationResult]:
         Be thorough but fair in your assessment.""",
         output_type=ValidationResult,
         name="verification_agent",
+        instrument=InstrumentationSettings(version=2),
     )

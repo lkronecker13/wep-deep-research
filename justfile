@@ -149,14 +149,43 @@ research query:
     @echo "✅ Research complete! Check research/outputs/ for results"
 
 # ----------------------------
-# Research POC - Dataset Export
+# Evaluation Suite
 # ----------------------------
 
-# Export evaluation dataset to JSON
-export-dataset path="research/evaluation_dataset.json":
-    @echo "Exporting evaluation dataset to JSON..."
+# Run full evaluation suite (35 questions across 7 domains)
+eval-full:
+    @echo "Running FULL evaluation suite (35 questions)..."
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
-    uv run python -m research.evaluation_dataset {{ path }}
+    uv run python -m research.evaluation.runner --export research/outputs/evaluations/
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Run smoke test evaluations (P0 only - 7 questions)
+eval-smoke:
+    @echo "Running SMOKE test evaluations (7 P0 questions)..."
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    uv run python -m research.evaluation.runner --smoke-test --export research/outputs/evaluations/
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Run critical evaluations (P0+P1 - 14 questions)
+eval-critical:
+    @echo "Running CRITICAL evaluations (14 P0+P1 questions)..."
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    uv run python -m research.evaluation.runner --critical --export research/outputs/evaluations/
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Run evaluation for a specific domain
+eval-domain domain:
+    @echo "Running evaluation for {{ domain }} domain..."
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    uv run python -m research.evaluation.runner --domain {{ domain }} --export research/outputs/evaluations/
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+
+# Run evaluation for a single custom query
+eval-query query:
+    @echo "Running evaluation for custom query..."
+    @echo "Query: {{ query }}"
+    @printf '\033[0;32m--------------------------------------------------\033[0m\n'
+    uv run python -m research.evaluation.runner --query "{{ query }}" --export research/outputs/evaluations/
     @printf '\033[0;32m--------------------------------------------------\033[0m\n'
 
 # ----------------------------

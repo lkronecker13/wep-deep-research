@@ -481,6 +481,38 @@ export ANTHROPIC_API_KEY="sk-ant-..."  # Get from https://console.anthropic.com/
 export GEMINI_API_KEY="..."            # Get from https://aistudio.google.com/apikey
 ```
 
+### Setting Up Arize Phoenix Cloud (Optional)
+
+To view evaluation traces and metrics in your own Arize Phoenix Cloud dashboard:
+
+1. Create a Free Account
+
+Sign up at https://app.phoenix.arize.com/ (free tier available)
+
+2. Get Your API Key
+
+Go to Settings > General > API Keys, create a new API key or copy an existing one.
+Direct link: https://app.phoenix.arize.com/settings/general
+
+3. Configure Environment Variables
+
+Add the following to your `.env` file:
+```bash
+PHOENIX_API_KEY=your-api-key-here
+PHOENIX_COLLECTOR_ENDPOINT=https://app.phoenix.arize.com/s/yourusername
+```
+
+4. Run Evaluations
+```bash
+just eval-query "What is quantum computing?"
+```
+
+5. View Results
+
+Open your Phoenix dashboard at https://app.phoenix.arize.com/
+
+Your traces will appear under the project: deep-research-evals
+
 ---
 
 ## Learn More
