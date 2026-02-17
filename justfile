@@ -200,7 +200,17 @@ run:
 
 # Start the FastAPI development server
 serve:
-    @echo "Starting development server..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Starting development server..."
+    if [ -f .env ]; then
+        echo "Loading environment from .env..."
+        set -a
+        source .env
+        set +a
+    else
+        echo "⚠️  No .env file found - API keys may be missing"
+    fi
     uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8000
 
 # Generate OpenAPI YAML specification

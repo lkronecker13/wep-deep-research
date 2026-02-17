@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +23,9 @@ from src.logging import bind_context_vars, configure_structlog, get_logger
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Configuration
+GEMINI_MAX_RETRIES = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
 
 # Initialize structured logger (human-readable for POC)
 configure_structlog(testing=True)
@@ -196,7 +200,26 @@ async def run_research(query: str) -> dict[str, object]:
                 print(f"    {i}. {preview}")
             print()
         except Exception as e:
-            log.exception("research.gathering.failed", error=str(e))
+            log.exception(
+                "research.gathering.failed",
+                error=str(e),
+                search_query=plan.web_search_steps[0].search_terms if plan.web_search_steps else "unknown",
+                search_count=len(plan.web_search_steps),
+                exc_info=True,
+            )
+
+            # DIAGNOSTIC: Capture Pydantic ValidationError details for bug investigation
+            if hasattr(e, "__cause__") and hasattr(e.__cause__, "errors"):
+                try:
+                    validation_errors = e.__cause__.errors()
+                    log.error(
+                        "pydantic_validation_errors",
+                        errors=validation_errors,
+                        retry_count=GEMINI_MAX_RETRIES,
+                    )
+                except Exception as extraction_error:
+                    log.warning("failed_to_extract_validation_errors", extraction_error=str(extraction_error))
+
             print(f"  ❌ Gathering failed: {e}")
             raise
 
