@@ -4,71 +4,69 @@
 
 The Deep Research Service is a production-grade AI system that automates structured, multi-source research using a coordinated team of four specialized AI agents. Built internally at Wepoint, the system transforms a single research question into a comprehensive, verified report — complete with sources, key findings, and a confidence score — in under three minutes and at a cost of less than $0.50 per query.
 
-This project serves a triple purpose: it is an internal productivity tool that accelerates our consultants' research workflows, a live demonstration of the production-grade agentic AI systems we build for clients, and a source of publishable thought leadership on multi-agent architecture. Every component is designed to be measured from day one, with a dedicated evaluation harness that assesses each agent individually using LLM-as-a-Judge methodology — ensuring we can continuously optimize quality and cost.
+The system serves as an internal productivity tool for our consultants, a working showcase of the agentic AI systems we build for clients, and a source of publishable content on multi-agent architecture. We instrumented every component with evaluation before tuning any of them — a dedicated LLM-as-a-Judge harness assesses each agent individually, so we can measure quality and cost before and after any change.
 
 ---
 
-## 2. Project Description: Leading by Example
+## 2. Leading by Example
 
 ### The Credibility Challenge
 
-As an AI consulting firm, Wepoint's value proposition depends on demonstrating — not just describing — technical expertise. Clients evaluating AI consulting partners want evidence that the team has shipped real systems, encountered real production challenges, and solved them. The Deep Research Service exists to close that gap.
+Clients evaluating AI consulting partners want to see shipped systems, not slide decks. They want evidence that the team has encountered real production challenges and solved them. The Deep Research Service is that evidence.
 
-### Triple Value Proposition
+### Where the Value Compounds
 
-The project generates value across three dimensions simultaneously:
+**Internal Tool.** Consultants use the service to accelerate research on client domains — cybersecurity trends, financial analysis methodologies, data engineering best practices. What previously required hours of manual search and synthesis now produces a structured, source-cited report in minutes.
 
-**Internal Tool.** Consultants use the service daily to accelerate research on client domains — cybersecurity trends, financial analysis methodologies, data engineering best practices. What previously required hours of manual search and synthesis now produces a structured, source-cited report in minutes.
+**Consulting Showcase.** Every architecture decision in this project — multi-model cost optimization, fault-tolerant parallel execution, real-time streaming, containerized deployment — reflects the same patterns we implement for clients. When a prospect asks "have you built production agentic systems?", we open a terminal and run ours.
 
-**Consulting Showcase.** Every architecture decision in this project — multi-model cost optimization, fault-tolerant parallel execution, real-time streaming, containerized deployment — reflects the same patterns we implement for clients. When a prospect asks "have you built production agentic systems?", we demonstrate our own.
-
-**Content Engine.** Each technical decision — why we chose PydanticAI over LangChain, how we handle partial failures in parallel agent execution, why binary PASS/FAIL evaluations outperform numeric scoring — becomes publishable thought leadership. The project funds its own marketing.
+**Content Engine.** The architectural decisions we made along the way — why PydanticAI over LangChain, how we handle partial failures in parallel agent execution, why binary PASS/FAIL evaluations outperform numeric scoring — are already outlined in internal ADRs. Each one is a blog post waiting to be published, and we have the production data to back the claims.
 
 ### Evaluation-Driven from Conception
 
-Unlike typical internal tools that are built first and measured later, the Deep Research Service was designed with evaluation as a first-class concern. Before optimizing any component, we can measure its baseline performance. Before claiming improvement, we can prove it with data. This discipline — building measurement into the foundation rather than bolting it on afterward — is what we advocate to clients, and what we practice ourselves.
+We instrumented the system before we tuned it, which means we can prove improvement rather than claim it. When we tell clients to build measurement into the foundation, we can show them how we did it ourselves.
 
 ### Phased Delivery
 
-The project follows a disciplined phased approach: from proof of concept (CLI prototype) through production service (FastAPI with real-time streaming) to the current evaluation-instrumented system. Each phase delivered working software while setting up the foundation for the next — demonstrating the iterative delivery model we recommend to clients.
+The project moved through clear phases: CLI prototype, then production FastAPI service with real-time streaming, then the current evaluation-instrumented system. Each phase shipped working software while laying groundwork for the next.
 
 ---
 
-## 3. Technical Value: Multi-Agent Leadership
+## 3. Technical Edge
 
-### Production Agentic AI — Not Prototypes
+### Beyond Agent Demos
 
-The AI industry is saturated with agent demos. What sets Wepoint apart is shipping production-grade multi-agent systems with the engineering rigor clients expect: typed data contracts, comprehensive test coverage, CI/CD pipelines, containerized deployment, and observable operations. The Deep Research Service is a concrete proof point.
+Most agent work in the industry stops at demos. The engineering required to ship — typed data contracts, CI gates, test coverage, containerized deployment, observable operations — is where the real work begins. That is the work this project represents.
 
 ### Multi-Agent Subsystem
 
 The system coordinates four specialized agents in a structured pipeline, each with a distinct role and model selection optimized for its task:
 
-- **Planning Agent** — Decomposes a research question into a strategic search plan with up to five complementary angles. Uses a reasoning-optimized model for complex analytical decomposition.
+- **Planning Agent** — Decomposes a research question into up to five complementary search angles. Uses a reasoning-optimized model because the quality of the plan determines the quality of everything downstream.
 
-- **Gathering Agents** — Execute searches in parallel using a cost-efficient model with built-in web search capability. The system tolerates partial failures — if some searches fail, it continues with available results rather than aborting the entire workflow.
+- **Gathering Agents** — Execute searches in parallel using a cost-efficient model with built-in web search. The system tolerates partial failures: if two of five searches fail due to rate limits or network issues, the workflow continues with the three that succeeded.
 
 - **Synthesis Agent** — Consolidates all gathered information into a coherent report with key findings, source citations, and acknowledged limitations. Uses the reasoning model for analytical depth.
 
-- **Verification Agent** — Fact-checks the synthesized report for internal consistency, source reliability, and completeness. Produces a confidence score and specific improvement recommendations.
+- **Verification Agent** — Reviews the synthesized report for internal consistency, source reliability, and completeness. This is the gate that catches contradictions, unsupported claims, and gaps. It outputs a confidence score between 0 and 1 alongside specific recommendations.
 
 ### Multi-Model Cost Optimization
 
-Rather than using a single expensive model for every task, the system strategically assigns models based on each phase's requirements. High-reasoning tasks (planning, synthesis, verification) use Claude Sonnet. High-volume parallel tasks (web gathering) use Gemini Flash at roughly one-tenth the cost per token. This keeps the total cost per research workflow well under $0.50 while maintaining quality where it matters most.
+The system assigns models based on what each phase actually needs. Planning, synthesis, and verification require strong reasoning — they use Claude Sonnet. Gathering is high-volume parallel search — it uses Gemini Flash at roughly one-tenth the cost per token. The result: a full research workflow runs well under $0.50 total.
 
 ### Evaluation as a Differentiator
 
 The integrated LLM-as-a-Judge evaluation system assesses every agent individually across four quality dimensions: plan quality, source quality, report quality, and verification quality. The evaluation dataset spans 35 questions across seven consulting domains — data, cybersecurity, AI, finance, sales, management, and marketing — with priority tiers for smoke testing through full regression.
 
-All evaluation results are traced through Arize Phoenix, providing a persistent observability layer that connects agent execution traces with quality assessments. This is not a post-hoc testing afterthought — it is a core system capability that enables data-driven optimization.
+All evaluation results are traced through Arize Phoenix, connecting agent execution traces with their quality assessments in a single observability layer. The evaluation harness ships as part of the system, not as an audit layer added afterward.
 
 ### Transferable Patterns
 
-Every architectural pattern in this system — agent specialization, parallel execution with fault tolerance, multi-model routing, evaluation-driven development — is directly transferable to client engagements. The service functions as both a working reference architecture and a training ground for our engineering team.
+Every pattern here — agent specialization, fault-tolerant parallelism, multi-model routing, evaluation-driven development — we have already applied or will apply on client work.
 
 ---
 
-## 4. Technical Description: How the System Works
+## 4. The System
 
 ### The Four-Phase Pipeline
 
@@ -150,7 +148,7 @@ The project demonstrates a complete lifecycle from initial research through prod
 | Phase 3 — Durability | Planned | DBOS-backed workflow persistence for long-running research |
 | Phase 4 — Deployment | Planned | GCP Cloud Run with production observability and cost dashboards |
 
-This phased approach ensures that each increment delivers usable software while building toward a fully production-hardened system.
+Phases 1 through 2.5 are complete and running.
 
 ### Evaluations as a Central Practice
 
@@ -169,9 +167,9 @@ The evaluation dataset covers seven consulting domains with prioritized tiers �
 
 ---
 
-## 5. Operational Maturity
+## 5. Production Ready
 
-The Deep Research Service is engineered for production deployment, not assembled as a prototype:
+The operational stack is complete: Docker builds, CI pipeline, test coverage, type enforcement. There is nothing to retrofit before deploying.
 
 **Containerization.** A three-stage Docker build (dependency installation, application build, minimal runtime) produces optimized images. The Gunicorn/Uvicorn configuration is tuned for async workloads with request jitter to prevent memory accumulation. Health probes follow Kubernetes conventions — liveness and readiness endpoints are ready for orchestrated deployment.
 
@@ -183,4 +181,4 @@ The Deep Research Service is engineered for production deployment, not assembled
 
 **Real-Time Streaming.** The SSE implementation includes heartbeat keepalives, client disconnect detection, bounded queue backpressure, and a 10-minute hard timeout — the kind of production concerns that distinguish deployed systems from demos.
 
-This operational foundation means the system can move to cloud deployment without rewriting infrastructure. The gap between "working locally" and "running in production" is configuration, not engineering.
+Cloud Run deployment is a two-hour job once GCP credentials are provisioned. There is no infrastructure to retrofit.
