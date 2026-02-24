@@ -4,11 +4,12 @@ Development standards and guidelines for Claude Code when working on the Deep Re
 
 ## Project Overview
 
-This is an AI-powered deep research service using multi-agent workflows built with PydanticAI. The project uses a phased approach:
+This is an AI-powered deep research service using multi-agent workflows built with PydanticAI.
 
-- **Phase 1 (Current)**: POC in `research/` folder - 4-agent workflow (planning, gathering, synthesis, verification)
-- **Phase 2 (Planned)**: FastAPI service with DBOS durability
-- **Phase 3 (Future)**: Production GCP deployment
+- **Phase 1** (Complete): POC in `research/` folder - 4-agent workflow (planning, gathering, synthesis, verification)
+- **Phase 2** (Complete): FastAPI service with production workflow, structured error handling, health checks
+- **Phase 2.5** (Complete): SSE streaming, demo mode, Docker containerization, LLM-as-a-Judge evaluation system
+- **Phase 3** (Planned): Production GCP Cloud Run deployment
 
 **Multi-model strategy**: Claude Sonnet 4.5 (reasoning) + Gemini 2.5 Flash (parallel searches)
 
@@ -102,50 +103,87 @@ just type-check        # Type check with mypy (only checks src/)
 just test              # Run tests (only checks tests/)
 just validate-branch   # Full validation (format + lint + type-check + test)
 
-# Running research queries (requires API keys)
-python -m research.run_research "Your research question here"
+# Running the API server (requires API keys)
+just serve             # Start FastAPI dev server on http://localhost:8000
 
-# View results
-ls research/outputs/
-cat research/outputs/research_*.json | jq '.report.key_findings'
+# Running research queries via CLI (requires API keys)
+just research "Your research question here"
+
+# Evaluation suite (requires API keys + optional PHOENIX_API_KEY)
+just eval-smoke        # 7 P0 questions
+just eval-critical     # 14 P0+P1 questions
+just eval-full         # 35 questions across 7 domains
+
+# Docker
+just docker-build      # Build production image
+just docker-run        # Run with docker-compose (http://localhost:8080)
+just docker-stop       # Stop containers
 ```
 
 ## Project Structure
 
 ```
 wep-deep-research/
-├── research/              # Phase 1 POC (current implementation)
-│   ├── models.py          # Pydantic models for research data
-│   ├── agents.py          # 4 PydanticAI agents
-│   ├── run_research.py    # CLI + workflow orchestration
-│   └── outputs/           # JSON results (gitignored)
+├── src/                          # Production application (Phase 2+)
+│   ├── server.py                 # FastAPI app (/research, /research/stream, /health)
+│   ├── workflow.py               # 4-phase async research pipeline
+│   ├── agents.py                 # 4 PydanticAI agents (plan, gather, synthesize, verify)
+│   ├── models.py                 # Pydantic models (PhaseTimings, ResearchResult, etc.)
+│   ├── events.py                 # SSE event types and streaming infrastructure
+│   ├── demo.py                   # Demo mode (hardcoded responses for frontend testing)
+│   ├── exceptions.py             # Custom exceptions (PlanningError, GatheringError, etc.)
+│   ├── logging.py                # Production logging (structlog + correlation IDs)
+│   └── export_openapi.py         # OpenAPI YAML generation
 │
-├── src/                   # Core application (future phases)
-│   └── logging.py         # Production logging system
+├── research/                     # Phase 1 POC (reference + evaluation)
+│   ├── models.py                 # Pydantic models for research data
+│   ├── agents.py                 # 4 PydanticAI agents (CLI version)
+│   ├── run_research.py           # CLI + workflow orchestration
+│   ├── evaluation/               # LLM-as-a-Judge evaluation system
+│   │   ├── runner.py             # Evaluation orchestrator
+│   │   ├── evaluators.py         # 4 evaluators (one per agent phase)
+│   │   ├── prompts.py            # Judge prompt templates
+│   │   ├── datasets.py           # Dataset loading
+│   │   ├── schemas.py            # Evaluation data models
+│   │   ├── export.py             # Results export
+│   │   ├── tracing.py            # Arize Phoenix integration
+│   │   └── EVALUATION_REPORT.md  # Production run results
+│   ├── data/
+│   │   └── production_questions.json  # 35 questions across 7 domains
+│   └── outputs/                  # JSON results (gitignored)
 │
-├── tests/                 # Test suite
-│   └── test_logging.py    # Example logging tests
+├── tests/                        # Test suite (182 tests, 86% coverage)
 │
-├── docs/                  # Technical documentation
-│   ├── ARCHITECTURE_DECISIONS.md
-│   ├── IMPLEMENTATION_PLAN.md
-│   └── PHASE1_IMPLEMENTATION.md
+├── docs/                         # Technical documentation
+│   └── EXECUTIVE_BRIEF.md        # Executive summary of current state
 │
-├── pyproject.toml         # Project configuration
-├── justfile               # Development automation
-└── CLAUDE.md              # This file
+├── Dockerfile                    # Production Docker image
+├── docker-compose.yml            # Container orchestration
+├── gunicorn_conf.py              # Production WSGI config
+├── ADR.md                        # Architecture Decision Record
+├── pyproject.toml                # Project configuration
+├── justfile                      # Development automation
+└── CLAUDE.md                     # This file
 ```
 
 ## Important Notes
 
 ### Research Folder Exclusions
 
-The `research/` folder is **intentionally excluded** from:
+The `research/` folder (including the evaluation system) is **intentionally excluded** from:
 - `just type-check` (only checks `src/`)
 - `just test` (only checks `tests/`)
 
-This is by design for Phase 1 POC work. Research code will be restructured into `src/` during Phase 2.
+This is by design. The `research/` folder contains the Phase 1 POC and the evaluation harness, which are separate from the production `src/` code.
 
 ### Lazy Agent Initialization
 
-Agents in `research/agents.py` use lazy initialization (getter functions) so imports work without API keys. This allows `just` commands to run without requiring API credentials.
+Agents in both `research/agents.py` and `src/agents.py` use lazy initialization (getter functions with `@lru_cache`) so imports work without API keys. `src/agents.py` also provides `create_*()` factory functions for test injection with `TestModel`.
+
+### Two Parallel Pipelines
+
+The project has two implementations of the same 4-agent workflow:
+- **`research/`**: CLI-based POC, used by `just research` and the evaluation system
+- **`src/`**: FastAPI production service, used by `just serve`
+
+Both share the same agent architecture but differ in infrastructure (tracing, error handling, streaming).
