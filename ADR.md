@@ -53,7 +53,7 @@ Validated Report + Confidence Score
 ### Cons
 - Requires two API keys (Anthropic + Google)
 - Multi-model complexity vs single-provider simplicity
-- No durability/resumption in Phase 1 (added in Phase 2)
+- No durability/resumption (deferred; stateless API sufficient for current use)
 
 ## Alternatives Considered
 
@@ -73,17 +73,25 @@ Validated Report + Confidence Score
 - CLI interface with JSON output
 - No persistence or durability
 
-### Phase 2: Local Service (Planned)
-- FastAPI REST endpoints
-- DBOS-backed durability
-- PostgreSQL persistence
-- Repository pattern
+### Phase 2: Production Service ✅ (Complete)
+- FastAPI REST API with `/research` endpoint
+- Production 4-phase workflow in `src/workflow.py`
+- Structured error handling with sanitized client messages
+- Health check endpoints (`/health`, `/health/liveness`, `/health/readiness`)
+- Comprehensive test suite (161 tests, 86% coverage)
+- **Deferred**: DBOS durability, PostgreSQL persistence, repository pattern (stateless API sufficient)
 
-### Phase 3: Production (Future)
+### Phase 2.5: SSE Streaming + Demo Mode ✅ (Complete)
+- `POST /research/stream` with real-time SSE progress events
+- Demo mode (`?demo=true`) for frontend testing without API costs
+- Docker containerization with production-ready Gunicorn config
+- LLM-as-a-Judge evaluation system with Arize Phoenix tracing
+
+### Phase 3: Production Deployment (Planned)
 - GCP Cloud Run deployment
-- Logfire observability
-- API authentication
-- Cost tracking & monitoring
+- Observability and cost tracking
+- API authentication and rate limiting
+- Monitoring dashboards and alerts
 
 ## Non-Functional Requirements
 - **Performance**: < 2 minutes for typical research queries
@@ -98,7 +106,8 @@ Validated Report + Confidence Score
 - **Provides**:
   - JSON research reports with citations
   - Quality validation scores
-  - Future: REST API endpoints, event streams
+  - REST API endpoints (`/research`, `/research/stream`)
+  - SSE event streams for real-time progress
 
 ## Security
 - API keys via environment variables (no hardcoded secrets)
@@ -108,4 +117,4 @@ Validated Report + Confidence Score
 ## References
 - [PydanticAI Documentation](https://ai.pydantic.dev/)
 - [Pydantic Stack Demo - durable-exec](https://github.com/pydantic/pydantic-stack-demo/tree/main/durable-exec)
-- Project docs: `docs/ARCHITECTURE_DECISIONS.md`, `docs/IMPLEMENTATION_PLAN.md`
+- Project docs: `docs/EXECUTIVE_BRIEF.md`, `README.md`

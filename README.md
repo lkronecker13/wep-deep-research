@@ -262,9 +262,7 @@ wep-deep-research/
 │   └── test_server.py           # API endpoint tests (189 lines)
 │
 ├── docs/                        # Technical documentation
-│   ├── AGENT_ARCHITECTURE.md    # Agent design patterns
-│   ├── ARCHITECTURE_DECISIONS.md # ADRs for key decisions
-│   ├── IMPLEMENTATION_GUIDE.md  # Practical implementation guide
+│   ├── EXECUTIVE_BRIEF.md       # Executive summary and business context
 │   └── research/                # Research documents
 │       └── gcp-cloud-run-sse-limits.md  # GCP SSE deployment guide
 │
@@ -520,9 +518,8 @@ Your traces will appear under the project: deep-research-evals
 ### Project Documentation
 
 - **Architecture & Design:**
-  - `docs/AGENT_ARCHITECTURE.md` - Agent design patterns and orchestration
-  - `docs/ARCHITECTURE_DECISIONS.md` - ADRs for key technical decisions
-  - `docs/IMPLEMENTATION_GUIDE.md` - Practical implementation guide
+  - `docs/EXECUTIVE_BRIEF.md` - Executive summary and business context
+  - `ADR.md` - Architecture Decision Record (technology choices and trade-offs)
 
 - **SSE Streaming (Phase 2.5):**
   - `SSE_STREAMING_PLAN.md` - Complete implementation plan for streaming endpoint
